@@ -6,8 +6,8 @@ app = Flask(__name__)
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
 app.config['UPLOAD_FOLDER'] = 'uploads/'
-app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-
+app.config['ALLOWED_EXTENSIONS'] = set(['csv', 'gz'])
+imgs = []
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
@@ -21,25 +21,43 @@ def jugex():
     res = backend.performJugex()
     return jsonify(result=res)
 
+@app.route('/uploadMultiple', methods=['POST'])
+def uploadMultiple():
+    if request.method == 'POST':
+        files = request.files.getlist("file[]")
+        for file in files:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                print(path)
+                file.save(path)
+                extension = filename.rsplit('.', 1)[1]
+                if(extension == 'csv'):
+                    rows = backend.readCSVFile(path)
+                else:
+                    imgs.append(backend.readVOI(path))
+        return render_template('index.html')
+
+
 @app.route('/upload', methods=['POST'])
 def upload():
-    # Get the name of the uploaded file
     file = request.files['file']
-    # Check if the file is one of the allowed types/extensions
     if file and allowed_file(file.filename):
-        # Make the filename safe, remove unsupported chars
         filename = secure_filename(file.filename)
-        # Move the file form the temporal folder to
-        # the upload folder we setup
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        # Redirect the user to the uploaded_file route, which
-        # will basicaly show on the browser the uploaded file
-        return redirect(url_for('uploaded_file',
-                                filename=filename))
+        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        print(path)
+        file.save(path)
+        extension = filename.rsplit('.', 1)[1]
+        if(extension == 'csv'):
+            rows = backend.readCSVFile(path)
+        else:
+            imgs.append(backend.readVOI(path))
+        return render_template('index.html')
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    #backend.readCSVFile(filename)
+
 if __name__ == '__main__':
     debug = true

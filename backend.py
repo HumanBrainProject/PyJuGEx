@@ -668,6 +668,10 @@ def readVOIs():
     print(header2)
     return vois
 
+def readVOI(voiName):
+    img = nib.load(voiName)
+    return img
+
 def performJugex():
     donorIds = ['15496','14380','15697','9861','12876','10021']
     #donorIds = ['15496', '14380']

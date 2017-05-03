@@ -14,16 +14,15 @@ rel="stylesheet">
 </div>
 <hr/>
 <div>
-<form action="upload" method="post" enctype="multipart/form-data">
-       <input type="file" name="file"><br /><br />
-       <input type="submit" value="Upload">
+
+<form action="uploadMultiple" method="post" enctype="multipart/form-data">
+        <p>Input VOIs and Genelists:
+        <input type="file" multiple="" name="file[]"/><br />
+        <input type="submit" value="Submit" class="span2">
 </form>
-<p>Select 1st VOI:
-<input type="file" id="voi1" onchange="alertFilename(id)">
-<p>Select 2nd VOI:
-<input type="file" id="voi2" onchange="alertFilename(id)">
-<p>Genelist:
-<input type="file" id="genelist">
+<p>
+<p>
+<p>
 <p><a href="javascript:void();" id="calculate">Perform JuGex</a>
 <div id="dvTable">
 </div>
