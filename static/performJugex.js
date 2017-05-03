@@ -1,8 +1,6 @@
 $(function() {
     $('a#calculate').bind('click', function() {
         $.getJSON('/_jugex', {
-                      //      a: $('input[name="a"]').val(),
-                      //      b: $('input[name="b"]').val()
                   }, function(data) {
                       var json = JSON.parse(data.result);
                       for(var i=0; i < json.genes.length; i++)
@@ -27,8 +25,6 @@ $(function() {
                       var dvTable = document.getElementById("dvTable");
                       dvTable.innerHTML = "";
                       dvTable.appendChild(table);
-
-                      //console.log(data.result);
                   });
         return false;
     });
