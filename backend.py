@@ -675,19 +675,20 @@ def readVOI(voiName):
 
 def performJugex():
     #donorIds = ['15496', '14380']
-    path = './uploads'
+    path = './uploads/'
     vois = []
     geneList = dict()
     for filename in os.listdir(path):
-        extension = filename.rsplit('.', 1)[1]
+        files = path+filename
+        extension = files.rsplit('.', 1)[1]
         if(extension == 'csv'):
-            geneList = readCSVFile(filename)
+            geneList = readCSVFile(files)
         else:
-            vois.append(readVOI(filename))
+            vois.append(readVOI(files))
     print(vois[0].header)
     print(vois[1].header)
-    #for i in range(0, len(geneList['probe_id'])):
-    #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
+    for i in range(0, len(geneList['probe_id'])):
+        print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
     donorIds = ['15496','14380','15697','9861','12876','10021']
     apiData = getAPIData(donorIds)
     specimenInfo = downloadSpecimens()
