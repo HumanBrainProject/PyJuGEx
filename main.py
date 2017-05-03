@@ -7,7 +7,6 @@ if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['ALLOWED_EXTENSIONS'] = set(['csv', 'gz'])
-imgs = []
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
@@ -29,13 +28,7 @@ def uploadMultiple():
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                print(path)
                 file.save(path)
-                extension = filename.rsplit('.', 1)[1]
-                if(extension == 'csv'):
-                    rows = backend.readCSVFile(path)
-                else:
-                    imgs.append(backend.readVOI(path))
         return render_template('index.html')
 
 

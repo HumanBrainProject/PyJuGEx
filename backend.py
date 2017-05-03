@@ -4,7 +4,7 @@ import urllib.request
 import json
 from numpy.linalg import inv
 import csv
-
+import os
 from numpy import *
 import scipy as sp
 import scipy.stats.mstats
@@ -111,7 +111,7 @@ def extractExpLevel(apiData, vois, specimenInfo, Mni, mapThreshold, searchMode):
     main_r = []
     for i in range(0, len(specimenInfo)):
         revisedApiDataCombo = dict()
-        revisedApiData = expressionSpmCorrelation(apiData[i], vois['img1'], specimenInfo[i], Mni, mapThreshold, searchMode)
+        revisedApiData = expressionSpmCorrelation(apiData[i], vois[0], specimenInfo[i], Mni, mapThreshold, searchMode)
         revisedApiDataCombo['explevels'] = revisedApiData['explevels'][:]
         revisedApiDataCombo['zscores'] = revisedApiData['zscores'][:]
         revisedApiDataCombo['coords'] = revisedApiData['coords'][:]
@@ -122,7 +122,7 @@ def extractExpLevel(apiData, vois, specimenInfo, Mni, mapThreshold, searchMode):
         print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
         main_r.append(revisedApiDataCombo)
         revisedApiDataCombo = dict()
-        revisedApiData = expressionSpmCorrelation(apiData[i], vois['img2'], specimenInfo[i], Mni, mapThreshold, searchMode)
+        revisedApiData = expressionSpmCorrelation(apiData[i], vois[1], specimenInfo[i], Mni, mapThreshold, searchMode)
         revisedApiDataCombo['explevels'] = revisedApiData['explevels'][:]
         revisedApiDataCombo['zscores'] = revisedApiData['zscores'][:]
         revisedApiDataCombo['coords'] = revisedApiData['coords'][:]
@@ -180,7 +180,7 @@ def switch2gensymbol(entrez_id, combined_zscores, area1Len, area2Len):
     return res
 
 
-def performAnova(main_r, searchMode):
+def performAnova(main_r, searchMode,geneList):
     #Get data ready for anova
     #factors={factor_area factor_specimen factor_age_numeric factor_race}; varnames = {'Area';'Specimen';'Age';'Race'};
     r = robjects.r
@@ -261,8 +261,8 @@ def performAnova(main_r, searchMode):
     print(factor_age_numeric)
 
     if searchMode == 1:
-        geneList = readCSVFile('./MDD_Gene_List.csv')
-        print(len(geneList))        
+        #geneList = readCSVFile('./MDD_Gene_List.csv')
+        print(len(geneList))
         allProbeData = switch2gensymbol(geneList['entrez_id'],combined_zscores, len(area1_zscores), len(area2_zscores))
         combined_zscores = np.zeros((len(allProbeData['combined_zscores']), len(allProbeData['combined_zscores'])))
         combined_zscores = np.copy(allProbeData['combined_zscores'])
@@ -672,17 +672,30 @@ def readVOI(voiName):
     img = nib.load(voiName)
     return img
 
+
 def performJugex():
-    donorIds = ['15496','14380','15697','9861','12876','10021']
     #donorIds = ['15496', '14380']
-    vois = readVOIs()
+    path = './uploads'
+    vois = []
+    geneList = dict()
+    for filename in os.listdir(path):
+        extension = filename.rsplit('.', 1)[1]
+        if(extension == 'csv'):
+            geneList = readCSVFile(filename)
+        else:
+            vois.append(readVOI(filename))
+    print(vois[0].header)
+    print(vois[1].header)
+    #for i in range(0, len(geneList['probe_id'])):
+    #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
+    donorIds = ['15496','14380','15697','9861','12876','10021']
     apiData = getAPIData(donorIds)
     specimenInfo = downloadSpecimens()
     Mni = specimenInfo[0]['alignment3d'] #GET THE CORRECT VALUE HERE
     mapThreshold = 2
     searchMode = 1
     main_r = extractExpLevel(apiData, vois, specimenInfo, Mni, mapThreshold, searchMode)    
-    res = performAnova(main_r, searchMode)
+    res = performAnova(main_r, searchMode, geneList)
     return res
     '''
     res = {}
