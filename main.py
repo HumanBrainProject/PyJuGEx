@@ -15,6 +15,7 @@ def allowed_file(filename):
 def index():
     return render_template('index.html')
 
+
 @app.route('/_jugex')
 def jugex():
     res = backend.performJugex()
@@ -30,27 +31,6 @@ def uploadMultiple():
                 path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(path)
         return render_template('index.html')
-
-
-@app.route('/upload', methods=['POST'])
-def upload():
-    file = request.files['file']
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        print(path)
-        file.save(path)
-        extension = filename.rsplit('.', 1)[1]
-        if(extension == 'csv'):
-            rows = backend.readCSVFile(path)
-        else:
-            imgs.append(backend.readVOI(path))
-        return render_template('index.html')
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-    #backend.readCSVFile(filename)
 
 if __name__ == '__main__':
     debug = true
