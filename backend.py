@@ -32,15 +32,6 @@ def buildSpecimenFactors():
         specimenFactors['race'].append(res[i]['race_only'])
         specimenFactors['gender'].append(res[i]['sex'])
         specimenFactors['age'].append(res[i]['age']['days']/365)
-        '''
-        data = dict();
-        data['id'] = res[i]['id']
-        data['name'] = res[i]['name']
-        data['race'] = res[i]['race_only']
-        data['gender'] = res[i]['sex']
-        data['age'] = res[i]['age']['days']/365
-        specimenFactors.append(data)
-        '''
     return specimenFactors;
 
 def transformSamples(samples, T):
@@ -359,7 +350,6 @@ def performAnova(main_r, searchMode,geneList):
     np.savetxt('Reference_Anovan_p.txt', Reference_Anovan_p, fmt='%f')
     '''
     n_rep = 1000
-    #n_rep = 1
     FWE_corrected_p = np.zeros(n_genes)
     F_mat_perm_anovan = np.zeros((n_rep, n_genes))
     p_mat_perm_anovan = np.zeros((n_rep, n_genes))
@@ -388,10 +378,6 @@ def performAnova(main_r, searchMode,geneList):
                               ('Race', robjects.StrVector(factor_race)),
                               ('Zscores', robjects.FloatVector(combined_zscores[:,j]))])
             dataf = robjects.DataFrame(od)
-    #        print(dataf)            #f = robjects.Formula('Zscores~Area*Specimen*Age*Race')
-            #r['options'](contrasts=r['c']("contr.sum","contr.poly"))
-            #f = robjects.Formula('Zscores~Specimen+Area+Age+Race')
-            #a = r['aov'](f, data = dataf,  type=3)
             f = robjects.Formula('Zscores~Area+Specimen+Age+Race')
             a = r['aov'](f, data = dataf)
             summary = r['summary'](a)
@@ -671,30 +657,30 @@ def saveAPISpecimenData(donorIds, apiData, specimenInfo):
     print(rootDir)
     if not os.path.exists(rootDir):
         os.makedirs(rootDir)
-    fileName = os.path.join(rootDir, 'specimenInfoName.txt')
-    if not os.path.exists(fileName):
-        with open(fileName, 'w') as f:
-            for s in specimenInfo:
-                f.write(str(s['name'])+"\n")
-    fileName = os.path.join(rootDir, 'specimenInfoMat.txt')
-    for s in specimenInfo:
-        print(s['alignment3d'])
-    if not os.path.exists(fileName):
-        f = open(fileName, 'ab')
-        for s in specimenInfo:
-            np.savetxt(f, s['alignment3d'])
-            print(s['alignment3d'])
-        f.close()
     for i in range(0, len(donorIds)):
-        donorPath = os.path.join(rootDir, donorIds[i])
+        donorId = donorIds[i]
+        donorPath = os.path.join(rootDir, donorId)
         if not os.path.exists(donorPath):
             os.makedirs(donorPath)
+        fileStr = 'specimenInfoMat.txt'
+        fileNameM = os.path.join(donorPath, fileStr)
+        fileStr = 'specimenInfoName.txt'
+        fileNameN = os.path.join(donorPath, fileStr)
+        if not os.path.exists(fileNameM):
+            s = specimenInfo[i]
+            np.savetxt(fileNameM, s['alignment3d'])
+        if not os.path.exists(fileNameN):
+            s = specimenInfo[i]
+            f = open(fileNameN, 'w')
+            f.write(str(s['name']))
+            f.close()
         apiInfo = apiData[i]
         fileName = os.path.join(donorPath, 'samples.txt')
         if not os.path.exists(fileName):
             with open(fileName, 'w') as f:
                 for s in apiInfo['samples']:
-                    f.write(str(s)+"\n")
+                    json.dump(s+"\n", f, ensure_ascii=False)
+                    #f.write(str(s)+"\n")
         fileName = os.path.join(donorPath, 'probes.txt')
         if not os.path.exists(fileName):
             with open(fileName, 'w') as f:
@@ -712,30 +698,28 @@ def saveAPISpecimenData(donorIds, apiData, specimenInfo):
                     f.write(str(s)+"\n")
 
 def readCachedApiSpecimenData(donorIds):
-    res = dict()
-    res['apiData'] = []
-    res['specimenInfo'] = {}
+    res = dict.fromkeys(['apiData', 'specimenInfo'])
+    res['specimenInfo'] = []
     rootDir = os.path.dirname('AllenBrainApi/')
     if not os.path.exists(rootDir):
         res['apiData'] = getAPIData(donorIds)
         res['specimenInfo'] = downloadSpecimens()
     else:
-        fileName = os.path.join(rootDir, 'specimenInfo.txt')
-        if not os.path.exists(fileName):
-            res['specimenInfo'] = downloadSpecimens()
-        else:
-            with open(fileName, 'r') as f:
-                specimen =  dict.fromkeys(['alignment3d','name'])
-                for line in f:
-                    alignment3d = line.strip()
-                    specimen['alignment3d'] = alignment3d
-                for line in f:
-                    name = line.strip()
-                    specimen['name'] = name
-                res['specimenInfo'].append(specimen)
-    for i in range(0, res['specimenInfo']):
-        print(res['specimenInfo'][i]['alignment3d'])
-        print(res['specimenInfo'][i]['name'])
+        for d in donorIds:
+            donorPath = os.path.join(rootDir, d)
+            fileNameM = os.path.join(donorPath, 'specimenInfoMat.txt')
+            mat = np.loadtxt(fileNameM)
+            fileNameN = os.path.join(donorPath, 'specimenInfoName.txt')
+            f = open(fileNameN, 'r')
+            name = f.read()
+            f.close()
+            specimen = dict.fromkeys(['name', 'alignment3d'])
+            specimen['name'] = name
+            specimen['alignment3d'] = mat
+            res['specimenInfo'].append(specimen)
+    for s in res['specimenInfo']:
+        print(s['alignment3d'])
+        print(s['name'])
     return res;
 
 def performJugex():
@@ -756,12 +740,14 @@ def performJugex():
     #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
     #donorIds = ['15496','14380','15697','9861','12876','10021']
     donorIds = ['15496']
-    #apiData = getAPIData(donorIds)
-    #specimenInfo = downloadSpecimens()
-    #saveAPISpecimenData(donorIds, apiData, specimenInfo)
+    '''
+    apiData = getAPIData(donorIds)
+    specimenInfo = downloadSpecimens()
+    saveAPISpecimenData(donorIds, apiData, specimenInfo)
+    '''
     res = readCachedApiSpecimenData(donorIds)
     Mni = res['specimenInfo'][0]['alignment3d'] #GET THE CORRECT VALUE HERE
-    print(Mni)
+    print('Mni ',Mni)
     mapThreshold = 2
     searchMode = 1
     main_r = extractExpLevel(res['apiData'], vois, res['specimenInfo'], Mni, mapThreshold, searchMode)
