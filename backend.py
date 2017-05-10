@@ -14,12 +14,41 @@ import rpy2.robjects.packages as rpackages
 from rpy2.robjects.vectors import StrVector
 from numpy.random import normal
 
+def readSpecimenFactors():
+    specimenFactors = dict()
+    specimenFactors['id'] = []
+    specimenFactors['name'] = []
+    specimenFactors['race'] = []
+    specimenFactors['gender'] = []
+    specimenFactors['age'] = []
+    rootDir = os.path.dirname('AllenBrainApi/')
+    fileName = os.path.join(rootDir, 'specimenFactors.txt')
+    if not os.path.exists(fileName):
+        specimenFactors = buildSpecimenFactors()
+    f = open(fileName, "r")
+    content = json.load(f)
+    f.close()
+    res = content['msg']
+    for i in range(0, len(res)):
+        specimenFactors['id'].append(res[i]['id'])
+        specimenFactors['name'].append(res[i]['name'])
+        specimenFactors['race'].append(res[i]['race_only'])
+        specimenFactors['gender'].append(res[i]['sex'])
+        specimenFactors['age'].append(res[i]['age']['days']/365)
+    return specimenFactors;
+
 
 def buildSpecimenFactors():
     url = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
     specimenFactors = dict()
     response = urllib.request.urlopen(url).read().decode('utf8')
-    text = json.loads(response)
+    text = json.loads(response)    
+    rootDir = os.path.dirname('AllenBrainApi/')
+    if not os.path.exists(rootDir):
+        os.makedirs(rootDir)
+    factorPath = os.path.join(rootDir, 'specimenFactors.txt')
+    with open(factorPath, 'w') as outfile:
+        json.dump(text, outfile)
     res = text['msg']
     specimenFactors['id'] = []
     specimenFactors['name'] = []
@@ -234,7 +263,9 @@ def performAnova(main_r, searchMode,geneList):
 
     print("some variables ",n_samples," , ",n_samples_area1," , ",n_samples_area2, " , ", len(factor_specimen))
     #create additional factors (age, gender, race) based on specimen_info
-    specimenFactors = buildSpecimenFactors()
+    #specimenFactors = buildSpecimenFactors()
+    # print(specimenFactors)
+    specimenFactors = readSpecimenFactors()
     print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
     for counter in range(0, n_samples):
         #info_index=find(strcmp({specimenFactors.name},factor_specimen(counter)));
