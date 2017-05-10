@@ -605,28 +605,69 @@ def queryAPI(donorId):
     data = text['msg']
     samples = []
     probes = []
+    rootDir = os.path.dirname('AllenBrainApi/')
+    if not os.path.exists(rootDir):
+        os.makedirs(rootDir)
+    donorPath = os.path.join(rootDir, donorId)
+    if not os.path.exists(donorPath):
+        os.makedirs(donorPath)
     nsamples = len(data['samples'])
     nprobes = len(data['probes'])
     for i in range(0, nsamples):
         samples.append(data['samples'][i])
     for i in range(0, nprobes):
         probes.append(data['probes'][i]);
-    #print(len(samples))
-    #print(len(probes))
     explevels = np.zeros((nsamples, nprobes))
     zscores = np.zeros((nsamples, nprobes))
     for i in range(0, nprobes):
         for j in range(0, nsamples):
             explevels[j][i] = probes[i]['expression_level'][j]
             zscores[j][i] = probes[i]['z-score'][j]
+    #SAVE SAMPLES
+    fileName = os.path.join(donorPath, 'samples.txt')
+    with open(fileName, 'w') as outfile:
+        json.dump(data['samples'], outfile)
+    #SAVE PROBES
+    fileName = os.path.join(donorPath, 'probes.txt')
+    with open(fileName, 'w') as outfile:
+        json.dump(data['probes'], outfile)
+    f = open(fileName, "r")
+    probesC = json.load(f)
+    f.close()
+    #SAVE ZSCORES
+    fileName = os.path.join(donorPath, 'zscores.txt')
+    np.savetxt(fileName, zscores)
+    zscoresC = np.loadtxt(fileName)
+    #SAVE EXPLEVELS
+    fileName = os.path.join(donorPath, 'expressionlevels.txt')
+    np.savetxt(fileName, explevels)
+    explevelsC = np.loadtxt(fileName)
+
+    #LOAD SAMPLES
+    fileName = os.path.join(donorPath, 'samples.txt')
+    f = open(fileName, "r")
+    samplesC = json.load(f)
+    f.close()
+    #LOAD PROBES
+    fileName = os.path.join(donorPath, 'probes.txt')
+    f = open(fileName, "r")
+    probesC = json.load(f)
+    f.close()
+    #LOAD ZSCORES
+    fileName = os.path.join(donorPath, 'zscores.txt')
+    zscoresC = np.loadtxt(fileName)
+    #LOAD EXPLEVELS
+    fileName = os.path.join(donorPath, 'expressionlevels.txt')
+    explevelsC = np.loadtxt(fileName)
+
     apiData = dict()
     apiData['samples'] = samples
     apiData['probes'] = probes
     apiData['explevels'] = explevels
     apiData['zscores'] = zscores
-    #print("In queryApi")
     print(len(apiData['samples']), ' ', apiData['zscores'].shape, ' ', apiData['explevels'].shape, ' ', len(apiData['probes']))
     return apiData
+#    return apiDataC
 
 def getAPIData(donorIds):
     apiData = []
@@ -652,9 +693,8 @@ def readVOI(voiName):
     return img
 
 #TODO : MAYBE save while downloading, not from memory, but TIMO mentioned he would like to have it as a separate  process. Discuss with Timo
-def saveAPISpecimenData(donorIds, apiData, specimenInfo):
+def saveSpecimenData(donorIds, apiData, specimenInfo):
     rootDir = os.path.dirname('AllenBrainApi/')
-    print(rootDir)
     if not os.path.exists(rootDir):
         os.makedirs(rootDir)
     for i in range(0, len(donorIds)):
@@ -674,32 +714,11 @@ def saveAPISpecimenData(donorIds, apiData, specimenInfo):
             f = open(fileNameN, 'w')
             f.write(str(s['name']))
             f.close()
-        apiInfo = apiData[i]
-        fileName = os.path.join(donorPath, 'samples.txt')
-        if not os.path.exists(fileName):
-            with open(fileName, 'w') as f:
-                for s in apiInfo['samples']:
-                    json.dump(s+"\n", f, ensure_ascii=False)
-                    #f.write(str(s)+"\n")
-        fileName = os.path.join(donorPath, 'probes.txt')
-        if not os.path.exists(fileName):
-            with open(fileName, 'w') as f:
-                for s in apiInfo['probes']:
-                    f.write(str(s)+"\n")
-        fileName = os.path.join(donorPath, 'zscores.txt')
-        if not os.path.exists(fileName):
-            with open(fileName, 'w') as f:
-                for s in apiInfo['zscores']:
-                    f.write(str(s)+"\n")
-        fileName = os.path.join(donorPath, 'explevels.txt')
-        if not os.path.exists(fileName):
-           with open(fileName, 'w') as f:
-                for s in apiInfo['explevels']:
-                    f.write(str(s)+"\n")
 
 def readCachedApiSpecimenData(donorIds):
     res = dict.fromkeys(['apiData', 'specimenInfo'])
     res['specimenInfo'] = []
+    res['apiData'] = []
     rootDir = os.path.dirname('AllenBrainApi/')
     if not os.path.exists(rootDir):
         res['apiData'] = getAPIData(donorIds)
@@ -717,6 +736,29 @@ def readCachedApiSpecimenData(donorIds):
             specimen['name'] = name
             specimen['alignment3d'] = mat
             res['specimenInfo'].append(specimen)
+            #LOAD SAMPLES
+            fileName = os.path.join(donorPath, 'samples.txt')
+            f = open(fileName, "r")
+            samplesC = json.load(f)
+            f.close()
+            #LOAD PROBES
+            fileName = os.path.join(donorPath, 'probes.txt')
+            f = open(fileName, "r")
+            probesC = json.load(f)
+            f.close()
+            #LOAD ZSCORES
+            fileName = os.path.join(donorPath, 'zscores.txt')
+            zscoresC = np.loadtxt(fileName)
+            #LOAD EXPLEVELS
+            fileName = os.path.join(donorPath, 'expressionlevels.txt')
+            explevelsC = np.loadtxt(fileName)
+            apiDataC = dict()
+            apiDataC['samples'] = samplesC
+            apiDataC['probes'] = probesC
+            apiDataC['explevels'] = explevelsC
+            apiDataC['zscores'] = zscoresC
+            res['apiData'].append(apiDataC)
+            print('inside readcachedata ',len(apiDataC['samples']), ' ', apiDataC['zscores'].shape, ' ', apiDataC['explevels'].shape, ' ', len(apiDataC['probes']))
     for s in res['specimenInfo']:
         print(s['alignment3d'])
         print(s['name'])
@@ -738,14 +780,24 @@ def performJugex():
     print(vois[1].header)
     #for i in range(0, len(geneList['probe_id'])):
     #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
-    #donorIds = ['15496','14380','15697','9861','12876','10021']
-    donorIds = ['15496']
+    donorIds = ['15496','14380','15697','9861','12876','10021']
     '''
-    apiData = getAPIData(donorIds)
-    specimenInfo = downloadSpecimens()
-    saveAPISpecimenData(donorIds, apiData, specimenInfo)
+        apiData = getAPIData(donorIds)
+        specimenInfo = downloadSpecimens()
+        saveSpecimenData(donorIds, apiData, specimenInfo)
     '''
     res = readCachedApiSpecimenData(donorIds)
+    '''
+    for i in range(0, len(res['apiData'])):
+        print('After reading cached data ',len(res['apiData'][i]['samples']),' ',len(res['apiData'][i]['probes']),' ',res['apiData'][i]['zscores'].shape,' ',res['apiData'][i]['explevels'].shape)
+    for i in range(0, len(res['apiData'][0]['samples'])):
+        if(apiData[0]['samples'][i]['sample']['mri'] != res['apiData'][0]['samples'][i]['sample']['mri']):
+            print('Diff samples ',apiData[0]['samples'][i]['sample']['mri'],' ',res['apiData'][0]['samples'][i]['sample']['mri'])
+    for i in range(0, len(res['apiData'][0]['zscores'])):
+        for j in range(0, len(res['apiData'][0]['zscores'][i])):
+            if(res['apiData'][0]['zscores'][i][j] != apiData[0]['zscores'][i][j]):
+                print('diff ',res['apiData'][0]['zscores'][i][j])
+    '''
     Mni = res['specimenInfo'][0]['alignment3d'] #GET THE CORRECT VALUE HERE
     print('Mni ',Mni)
     mapThreshold = 2
