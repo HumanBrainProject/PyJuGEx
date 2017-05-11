@@ -36,14 +36,5 @@
 </body>
 </html>
 <script>
-    $(function() {
-        $.ajax({
-            url: '{{ url_for("autocomplete") }}'
-            }).done(function (data){
-                $('#gene_autocomplete').autocomplete({
-                    source: data,
-                    minLength: 2
-                });
-            });
-        });
+
 </script>

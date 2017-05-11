@@ -5,9 +5,9 @@ from wtforms import TextField, Form
 
 # Initialize the Flask application
 app = Flask(__name__)
-backend.writeGeneList()
+#backend.writeGeneList()
 genes = backend.readGeneList()
-print(type(genes[0]))
+
 class SearchForm(Form):
     autocomp = TextField('Insert Entrez_id', id='gene_autocomplete')
 

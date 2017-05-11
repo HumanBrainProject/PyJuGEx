@@ -42,3 +42,16 @@ $(function() {
     });
 });
 
+$(function(){
+    $.ajax({
+        url: '/_autocomplete'
+        }).done(function (data){
+            $('#gene_autocomplete').autocomplete({
+                source: data,
+                minLength: 2,
+                select: function(event, ui) {
+                    console.log("You selected: " + ui.item.label);
+                }
+            });
+        });
+    });
