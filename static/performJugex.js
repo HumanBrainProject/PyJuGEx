@@ -1,19 +1,19 @@
 $(function() {
-  $('a#calculate').bind('click', function() {
+    $('a#calculate').bind('click', function() {
         $.getJSON('/_jugex', {
                   }, function(data) {
                       var elem = document.getElementById("myBar");
-                        var width = 10;
-                        var id = setInterval(frame, 10);
-                        function frame() {
+                      var width = 10;
+                      var id = setInterval(frame, 10);
+                      function frame() {
                           if (width >= 100) {
-                            clearInterval(id);
+                              clearInterval(id);
                           } else {
-                            width++;
-                            elem.style.width = width + '%';
-                            elem.innerHTML = width * 1  + '%';
+                              width++;
+                              elem.style.width = width + '%';
+                              elem.innerHTML = width * 1  + '%';
                           }
-                        }
+                      }
                       var json = JSON.parse(data.result);
                       for(var i=0; i < json.genes.length; i++)
                           console.log(json.genes[i].name+' '+json.genes[i].pval);
@@ -41,6 +41,4 @@ $(function() {
         return false;
     });
 });
-
-
 

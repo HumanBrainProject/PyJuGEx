@@ -195,7 +195,6 @@ def switch2gensymbol(entrez_id, combined_zscores, area1Len, area2Len):
            res['area1_zscores'].append(winsorzed_mean_zscores[i])
     for i in range(0, area2Len):
            res['area2_zscores'].append(winsorzed_mean_zscores[i+area1Len])
-
     return res
 
 
@@ -855,3 +854,47 @@ def performJugex():
     print(jsonStr)
     return jsonStr
     '''
+
+def writeGeneList():
+    donorIds = ['15496','14380','15697','9861','12876','10021']
+    rootDir = os.path.dirname('AllenBrainData/')
+    if not os.path.exists(rootDir):
+        print('Allen Brain Data has not been downloaded')
+        return
+    geneList = dict()
+    geneList['entrez_id'] = []
+    geneList['gene_symbol'] = []
+    for d in donorIds:
+        donorPath = os.path.join(rootDir, d)
+        if not os.path.exists(donorPath):
+            print('Allen Brain Data has not been downloaded for donor with id ',d)
+            return
+        fileName = os.path.join(donorPath, 'Probes.csv')
+        with open(fileName) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                val = row['entrez_id']
+                try:
+                    geneList['entrez_id'].append(str(val))
+                except:
+                    pass
+                geneList['gene_symbol'].append(row['gene_symbol'])
+    uniqueEntrezId = np.unique(geneList['entrez_id'])
+    with open('geneList.txt', 'w') as outfile:
+        json.dump(uniqueEntrezId.tolist(), outfile)
+    print(len(uniqueEntrezId))
+
+
+def readGeneList():
+    f = open('geneList.txt', "r")
+    entrezIds = json.load(f)
+    f.close()
+    #print(entrezIds)
+    return entrezIds
+
+
+
+
+
+
+

@@ -1,20 +1,29 @@
-from flask import Flask, render_template, request, jsonify, json, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, json, redirect, url_for, send_from_directory, Response
 from werkzeug import secure_filename
 import backend, os
+from wtforms import TextField, Form
+
 # Initialize the Flask application
 app = Flask(__name__)
+backend.writeGeneList()
+genes = backend.readGeneList()
+print(type(genes[0]))
+class SearchForm(Form):
+    autocomp = TextField('Insert Entrez_id', id='gene_autocomplete')
+
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['ALLOWED_EXTENSIONS'] = set(['csv', 'gz'])
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
 @app.route('/')
 def index():
-    return render_template('index.html')
-
+    form = SearchForm(request.form)
+    return render_template('index.html', form=form)
 
 @app.route('/_jugex')
 def jugex():
@@ -31,6 +40,10 @@ def uploadMultiple():
                 path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(path)
         return render_template('index.html')
+
+@app.route('/_autocomplete', methods=['GET'])
+def autocomplete():
+    return Response(json.dumps(genes), mimetype='application/json')
 
 if __name__ == '__main__':
     app.run(debug=True)
