@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, json, redirect, url_for, send_from_directory, Response
 from werkzeug import secure_filename
-import backend, os
+import backend, readapi, os
 from wtforms import TextField, Form
 
 # Initialize the Flask application
@@ -21,8 +21,6 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
-def sendGeneList():
-    return genelist
 
 
 @app.route('/')
@@ -54,9 +52,23 @@ def uploadMultiple():
                 file.save(path)
         return render_template('index.html')
 
+
 @app.route('/_autocomplete', methods=['GET'])
 def autocomplete():
     return Response(json.dumps(genes), mimetype='application/json')
+
+@app.route('/_downloadData', methods=['POST'])
+def createUrl():
+    if request.method == 'POST':
+        print(genelist)
+        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        url += genelist
+        url = url[:-1]
+        url += "][donors$eq"
+        donorIds = ['15496','14380','15697','9861','12876','10021']
+        for d in donorIds:
+            readapi.queryAPI(url, d)
+        return ""
 
 if __name__ == '__main__':
     app.run(debug=True)
