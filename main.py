@@ -4,13 +4,15 @@ import backend, readapi, os
 from wtforms import TextField, Form
 
 # Initialize the Flask application
+
 app = Flask(__name__)
-#backend.writeGeneList()
-genes = backend.readGeneList()
-genelist = ""
 
 class SearchForm(Form):
     autocomp = TextField('Insert Entrez_id', id='gene_autocomplete')
+
+#backend.writeGeneList()
+genes = backend.readGeneList()
+genelist = ""
 
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
@@ -57,8 +59,20 @@ def uploadMultiple():
 def autocomplete():
     return Response(json.dumps(genes), mimetype='application/json')
 
+@app.route('/_exportGeneList', methods=['POST'])
+def export():
+    form = SearchForm(request.form)
+    fileName = 'exportedGeneList.txt'
+    if request.method == 'POST':
+        f = open(fileName, 'w')
+        f.write('%s' % genelist[:-1])
+        f.close()
+        print(genelist)
+    return render_template('index.html', form=form)
+
 @app.route('/_downloadData', methods=['POST'])
 def createUrl():
+    form = SearchForm(request.form)
     if request.method == 'POST':
         print(genelist)
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
@@ -68,7 +82,7 @@ def createUrl():
         donorIds = ['15496','14380','15697','9861','12876','10021']
         for d in donorIds:
             readapi.queryAPI(url, d)
-        return ""
+        return render_template('index.html', form=form)
 
 if __name__ == '__main__':
     app.run(debug=True)

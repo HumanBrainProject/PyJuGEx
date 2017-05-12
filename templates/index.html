@@ -12,20 +12,33 @@
 <div class="container">
 <div class="header">
 <h3 class="text-muted">Flask JuGex</h3>
-{{ form.autocomp.label }}: {{ form.autocomp }}
-<form action="/_downloadData" method="post">
-    <button name="downloadBtn" type="submit">Download</button>
-</form>
 </div>
 <hr/>
 <div>
-
+{{ form.autocomp.label }}: {{ form.autocomp }}
+<p>
+<p>
+<p>
+<form action="/_downloadData" method="post">
+    <button name="downloadBtn" type="submit">Download</button>
+</form>
+<p>
+<p>
+<p>
 <form action="uploadMultiple" method="post" enctype="multipart/form-data">
         <p>Input VOIs and Lists of genes:
         <input type="file" multiple="" name="file[]"/><br />
         <input type="submit" value="Submit" class="span2">
 </form>
-
+<p>
+<p>
+<p>
+<form action="/_exportGeneList" method="post">
+    <button name="exportBtn" type="submit">Export Gene List</button>
+</form>
+<p>
+<p>
+<p>
 <p>
 <p>
 <p>
