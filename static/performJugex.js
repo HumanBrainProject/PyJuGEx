@@ -42,6 +42,14 @@ $(function() {
     });
 });
 
+function sendToServer(geneName) {
+      $.getJSON('/_getSelectedGenes', {
+        s: geneName
+      }, function(data) {
+        console.log(data.result);
+      });
+}
+
 $(function(){
     $.ajax({
         url: '/_autocomplete'
@@ -50,7 +58,8 @@ $(function(){
                 source: data,
                 minLength: 2,
                 select: function(event, ui) {
-                    console.log("You selected: " + ui.item.label);
+                    sendToServer(ui.item.label);
+//                    console.log("You selected: " + ui.item.label);
                 }
             });
         });

@@ -7,6 +7,7 @@ from wtforms import TextField, Form
 app = Flask(__name__)
 #backend.writeGeneList()
 genes = backend.readGeneList()
+genelist = ""
 
 class SearchForm(Form):
     autocomp = TextField('Insert Entrez_id', id='gene_autocomplete')
@@ -20,6 +21,10 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
+def sendGeneList():
+    return genelist
+
+
 @app.route('/')
 def index():
     form = SearchForm(request.form)
@@ -29,6 +34,14 @@ def index():
 def jugex():
     res = backend.performJugex()
     return jsonify(result=res)
+
+@app.route('/_getSelectedGenes')
+def getSelectedGenes():
+    global genelist
+    gene = request.args.get('s')
+    genelist += gene+','
+    return jsonify(result=genelist)
+
 
 @app.route('/uploadMultiple', methods=['POST'])
 def uploadMultiple():

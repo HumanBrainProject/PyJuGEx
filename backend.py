@@ -13,6 +13,14 @@ import rpy2.rlike.container as rlc
 import rpy2.robjects.packages as rpackages
 from rpy2.robjects.vectors import StrVector
 from numpy.random import normal
+import main
+
+def createUrl(geneList):
+    print(geneList)
+
+def getListofGenes():
+    geneList = main.sendGeneList()
+    createUrl(geneList)
 
 def readSpecimenFactors():
     specimenFactors = dict()
