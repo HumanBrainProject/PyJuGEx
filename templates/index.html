@@ -26,9 +26,19 @@
 <p>
 <p>
 <form action="uploadMultiple" method="post" enctype="multipart/form-data">
-        <p>Input VOIs and Lists of genes:
+        <p>Import Gene list:
         <input type="file" multiple="" name="file[]"/><br />
         <input type="submit" value="Submit" class="span2">
+</form>
+<form action="/_selectVois" method="post" enctype="multipart/form-data">
+<p>
+    <label>Select JuBrain Area</label>
+    <select name = "regionList">
+       <option value = "Fp1">Fp1</option>
+       <option value = "Fp2">Fp2</option>
+    </select>
+    <button type="submit">Submit!</button>
+</p>
 </form>
 <p>
 <p>

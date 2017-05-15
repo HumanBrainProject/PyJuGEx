@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, json, redirect, url_for, send_from_directory, Response
 from werkzeug import secure_filename
-import backend, readapi, os
+import backend, readapi, readfiles, os
 from wtforms import TextField, Form
 
 # Initialize the Flask application
@@ -13,7 +13,7 @@ class SearchForm(Form):
 #backend.writeGeneList()
 genes = backend.readGeneList()
 genelist = ""
-
+voilist = backend.createVoiList()
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -23,8 +23,6 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
-
-
 @app.route('/')
 def index():
     form = SearchForm(request.form)
@@ -32,6 +30,7 @@ def index():
 
 @app.route('/_jugex')
 def jugex():
+    #res = backend.performJugexFromFiles()
     res = backend.performJugex()
     return jsonify(result=res)
 
@@ -54,6 +53,14 @@ def uploadMultiple():
                 file.save(path)
         return render_template('index.html')
 
+@app.route('/_selectVois', methods=['GET', 'POST'])
+def selectVois():
+    form = SearchForm(request.form)
+    if request.method == 'POST':
+        region = request.form.get('regionList')
+        print(voilist[region])
+        backend.voinames.append(voilist[region])
+        return render_template('index.html', form=form)
 
 @app.route('/_autocomplete', methods=['GET'])
 def autocomplete():

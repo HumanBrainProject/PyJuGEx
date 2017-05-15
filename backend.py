@@ -3,6 +3,7 @@ import nibabel as nib
 import urllib.request
 import json
 from numpy.linalg import inv
+import readfiles
 import csv
 import os
 from numpy import *
@@ -15,7 +16,7 @@ from rpy2.robjects.vectors import StrVector
 from numpy.random import normal
 from wtforms import TextField, Form
 
-
+voinames = []
 
 def readSpecimenFactors():
     specimenFactors = dict()
@@ -801,16 +802,23 @@ def performJugex():
     #donorIds = ['15496', '14380']
     path = './uploads/'
     vois = []
+    print(voinames)
+    for f in voinames:
+        print(f)
+        vois.append(readVOI(f))
+    print(len(vois))
+    print(vois[0].header)
+    print(vois[1].header)
     geneList = dict()
     for filename in os.listdir(path):
         files = path+filename
         extension = files.rsplit('.', 1)[1]
         if(extension == 'csv'):
             geneList = readCSVFile(files)
+        '''
         else:
             vois.append(readVOI(files))
-    print(vois[0].header)
-    print(vois[1].header)
+        '''
     #for i in range(0, len(geneList['probe_id'])):
     #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
     donorIds = ['15496','14380','15697','9861','12876','10021']
@@ -857,6 +865,66 @@ def performJugex():
     print(jsonStr)
     return jsonStr
     '''
+    def performJugex():
+        #donorIds = ['15496', '14380']
+        path = './uploads/'
+        vois = []
+        geneList = dict()
+        for filename in os.listdir(path):
+            files = path+filename
+            extension = files.rsplit('.', 1)[1]
+            if(extension == 'csv'):
+                geneList = readCSVFile(files)
+            else:
+                vois.append(readVOI(files))
+        print(vois[0].header)
+        print(vois[1].header)
+        #for i in range(0, len(geneList['probe_id'])):
+        #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
+        donorIds = ['15496','14380','15697','9861','12876','10021']
+        '''
+            apiData = getAPIData(donorIds)
+            specimenInfo = downloadSpecimens()
+            saveSpecimenData(donorIds, apiData, specimenInfo)
+        '''
+        res = readCachedApiSpecimenData(donorIds)
+        '''
+        for i in range(0, len(res['apiData'])):
+            print('After reading cached data ',len(res['apiData'][i]['samples']),' ',len(res['apiData'][i]['probes']),' ',res['apiData'][i]['zscores'].shape,' ',res['apiData'][i]['explevels'].shape)
+        for i in range(0, len(res['apiData'][0]['samples'])):
+            if(apiData[0]['samples'][i]['sample']['mri'] != res['apiData'][0]['samples'][i]['sample']['mri']):
+                print('Diff samples ',apiData[0]['samples'][i]['sample']['mri'],' ',res['apiData'][0]['samples'][i]['sample']['mri'])
+        for i in range(0, len(res['apiData'][0]['zscores'])):
+            for j in range(0, len(res['apiData'][0]['zscores'][i])):
+                if(res['apiData'][0]['zscores'][i][j] != apiData[0]['zscores'][i][j]):
+                    print('diff ',res['apiData'][0]['zscores'][i][j])
+        '''
+        Mni = res['specimenInfo'][0]['alignment3d'] #GET THE CORRECT VALUE HERE
+        print('Mni ',Mni)
+        mapThreshold = 2
+        searchMode = 1
+        main_r = extractExpLevel(res['apiData'], vois, res['specimenInfo'], Mni, mapThreshold, searchMode)
+        res = performAnova(main_r, searchMode, geneList)
+        return res
+        '''
+        res = {}
+        res["genes"] = []
+        res["genes"].append({
+            'name':'abc',
+            'pval':'def'
+        })
+        res["genes"].append({
+            'name':'ghi',
+            'pval':'jkl'
+        })
+        res["genes"].append({
+            'name':'mno',
+            'pval':'pqr'
+        })
+        jsonStr = json.dumps(res)
+        print(jsonStr)
+        return jsonStr
+        '''
 
 def writeGeneList():
     donorIds = ['15496','14380','15697','9861','12876','10021']
@@ -895,9 +963,77 @@ def readGeneList():
     #print(entrezIds)
     return entrezIds
 
+def createVoiList():
+    voilist = {}
+    rootDir = os.path.dirname('uploads/')
+    fileName = os.path.join(rootDir, 'ba10m_l_N10_nlin2Stdicbm152casym.nii.gz')
+    voilist['Fp1'] = fileName
+    fileName = os.path.join(rootDir, 'ba10p_l_N10_nlin2Stdicbm152casym.nii.gz')
+    voilist['Fp2'] = fileName
+    return voilist
 
-
-
+def performJugexFromFiles():
+    donorIds = ['15496']
+    readfiles.readApiFromFile(donorIds)
+    '''
+        apiData = getAPIData(donorIds)
+        specimenInfo = downloadSpecimens()
+        saveSpecimenData(donorIds, apiData, specimenInfo)
+    '''
+    res = readCachedApiSpecimenData(donorIds)
+    #donorIds = ['15496', '14380']
+    path = './uploads/'
+    vois = []
+    geneList = dict()
+    for filename in os.listdir(path):
+        files = path+filename
+        extension = files.rsplit('.', 1)[1]
+        if(extension == 'csv'):
+            geneList = readCSVFile(files)
+        else:
+            vois.append(readVOI(files))
+    #print(vois[0].header)
+    #print(vois[1].header)
+    #for i in range(0, len(geneList['probe_id'])):
+    #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
+    #donorIds = ['15496','14380','15697','9861','12876','10021']
+    '''
+    for i in range(0, len(res['apiData'])):
+        print('After reading cached data ',len(res['apiData'][i]['samples']),' ',len(res['apiData'][i]['probes']),' ',res['apiData'][i]['zscores'].shape,' ',res['apiData'][i]['explevels'].shape)
+    for i in range(0, len(res['apiData'][0]['samples'])):
+        if(apiData[0]['samples'][i]['sample']['mri'] != res['apiData'][0]['samples'][i]['sample']['mri']):
+            print('Diff samples ',apiData[0]['samples'][i]['sample']['mri'],' ',res['apiData'][0]['samples'][i]['sample']['mri'])
+    for i in range(0, len(res['apiData'][0]['zscores'])):
+        for j in range(0, len(res['apiData'][0]['zscores'][i])):
+            if(res['apiData'][0]['zscores'][i][j] != apiData[0]['zscores'][i][j]):
+                print('diff ',res['apiData'][0]['zscores'][i][j])
+    '''
+    Mni = res['specimenInfo'][0]['alignment3d'] #GET THE CORRECT VALUE HERE
+    print('Mni ',Mni)
+    mapThreshold = 2
+    searchMode = 1
+    main_r = extractExpLevel(res['apiData'], vois, res['specimenInfo'], Mni, mapThreshold, searchMode)
+    res = performAnova(main_r, searchMode, geneList)
+    return res
+    '''
+    res = {}
+    res["genes"] = []
+    res["genes"].append({
+        'name':'abc',
+        'pval':'def'
+    })
+    res["genes"].append({
+        'name':'ghi',
+        'pval':'jkl'
+    })
+    res["genes"].append({
+        'name':'mno',
+        'pval':'pqr'
+    })
+    jsonStr = json.dumps(res)
+    print(jsonStr)
+    return jsonStr
+    '''
 
 
 
