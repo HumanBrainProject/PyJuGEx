@@ -384,6 +384,7 @@ def performAnova(main_r, searchMode,geneList):
     np.savetxt('Reference_Anovan_p.txt', Reference_Anovan_p, fmt='%f')
     '''
     n_rep = 1000
+    #n_rep = 1
     FWE_corrected_p = np.zeros(n_genes)
     F_mat_perm_anovan = np.zeros((n_rep, n_genes))
     p_mat_perm_anovan = np.zeros((n_rep, n_genes))
@@ -449,6 +450,12 @@ def performAnova(main_r, searchMode,geneList):
     resJson["genes"] = []
     for i in range(0, n_genes):
         if(FWE_corrected_p[i] < 0.05):
+            resJson["genes"].append({
+                'name':geneIds[i],
+                'pval':FWE_corrected_p[i]
+            })
+    for i in range(0, n_genes):
+        if(FWE_corrected_p[i] >= 0.05):
             resJson["genes"].append({
                 'name':geneIds[i],
                 'pval':FWE_corrected_p[i]
