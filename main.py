@@ -52,16 +52,29 @@ def uploadMultiple():
                 filename = secure_filename(file.filename)
                 path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(path)
-        return render_template('index.html', form=form)
+        return ('', 204)
+        #return render_template('index.html', form=form)
 
-@app.route('/_selectVois', methods=['GET', 'POST'])
-def selectVois():
+@app.route('/_selectVois1', methods=['GET', 'POST'])
+def selectVois1():
     form = SearchForm(request.form)
     if request.method == 'POST':
-        region = request.form.get('regionList')
+        region = request.form.get('regionList1')
         print(voilist[region])
         backend.voinames.append(voilist[region])
-        return render_template('index.html', form=form)
+        return ('', 204)
+        #return render_template('index.html', form=form)
+
+@app.route('/_selectVois2', methods=['GET', 'POST'])
+def selectVois2():
+    form = SearchForm(request.form)
+    if request.method == 'POST':
+        region = request.form.get('regionList2')
+        print(voilist[region])
+        backend.voinames.append(voilist[region])
+        return ('', 204)
+        #return render_template('index.html', form=form)
+
 
 @app.route('/_autocomplete', methods=['GET'])
 def autocomplete():
@@ -76,7 +89,8 @@ def export():
         f.write('%s' % genelist[:-1])
         f.close()
         print(genelist)
-    return render_template('index.html', form=form)
+    return ('', 204)
+#    return render_template('index.html', form=form)
 
 @app.route('/_downloadData', methods=['POST'])
 def createUrl():
@@ -90,7 +104,8 @@ def createUrl():
         donorIds = ['15496','14380','15697','9861','12876','10021']
         for d in donorIds:
             readapi.queryAPI(url, d)
-        return render_template('index.html', form=form)
+        return ('', 204)
+        #return render_template('index.html', form=form)
 
 if __name__ == '__main__':
     app.run(debug=True)
