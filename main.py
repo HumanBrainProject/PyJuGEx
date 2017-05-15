@@ -44,6 +44,7 @@ def getSelectedGenes():
 
 @app.route('/uploadMultiple', methods=['POST'])
 def uploadMultiple():
+    form = SearchForm(request.form)
     if request.method == 'POST':
         files = request.files.getlist("file[]")
         for file in files:
@@ -51,7 +52,7 @@ def uploadMultiple():
                 filename = secure_filename(file.filename)
                 path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(path)
-        return render_template('index.html')
+        return render_template('index.html', form=form)
 
 @app.route('/_selectVois', methods=['GET', 'POST'])
 def selectVois():

@@ -1,5 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+<style>
+body {
+    width: 20%;
+    border: 2px solid black;
+}
+</style>
 <head>
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
@@ -9,7 +15,7 @@
 </head>
 
 <body>
-<div class="container" width="100px">
+<div class="container">
 <div class="header">
 <h3 class="text-muted">Flask JuGex</h3>
 </div>
@@ -20,7 +26,7 @@
 <p>
 <p>
 <form action="/_downloadData" method="post">
-    <button name="downloadBtn" type="submit">Download</button>
+    <button name="downloadBtn" type="submit">Download Expression data From Allen Brain API</button>
 </form>
 <p>
 <p>
@@ -65,6 +71,7 @@
 <p>
 <p>
 <p><a href="javascript:void();" id="calculate">Perform JuGex</a>
+<p><b>Genes and their p values:</b></p>
 <div id="dvTable">
 </div>
 

@@ -25,7 +25,6 @@ $(function() {
                       row.appendChild(headerCell);
                       headerCell = document.createElement("TH");
                       headerCell.innerHTML = '\u00A0\u00A0\p value';
-                      //headerCell.innerHTML = 'p value';
                       row.appendChild(headerCell);
                       for(var i=0; i<json.genes.length; i++){
                           row = table.insertRow(-1);
@@ -35,7 +34,7 @@ $(function() {
                           cell.innerHTML = "\u00A0\u00A0";
                           cell.innerHTML += json.genes[i].pval;
                           if(parseFloat(json.genes[i].pval) < .05)
-                              cell.style.color = "blue";
+                              cell.style.color = "green";
                           else
                               cell.style.color = "red";
                       }

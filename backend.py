@@ -830,9 +830,9 @@ def performJugex():
     #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
     donorIds = ['15496','14380','15697','9861','12876','10021']
     '''
-        apiData = getAPIData(donorIds)
-        specimenInfo = downloadSpecimens()
-        saveSpecimenData(donorIds, apiData, specimenInfo)
+    apiData = getAPIData(donorIds)
+    specimenInfo = downloadSpecimens()
+    saveSpecimenData(donorIds, apiData, specimenInfo)
     '''
     res = readCachedApiSpecimenData(donorIds)
     '''
