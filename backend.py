@@ -15,6 +15,7 @@ import rpy2.robjects.packages as rpackages
 from rpy2.robjects.vectors import StrVector
 from numpy.random import normal
 from wtforms import TextField, Form
+from openpyxl import load_workbook
 
 voinames = []
 
@@ -905,11 +906,23 @@ def readGeneList():
 
 def createVoiList():
     voilist = {}
+    workbook = load_workbook('2016-02-16_JuBrainOntologyAndLabels.xlsx')
+    first_sheet = workbook.get_sheet_names()[0]
+    worksheet = workbook.get_sheet_by_name(first_sheet)
+    #for row in worksheet.iter_rows():
+    #    print(row)
+    #for cell in row:
+    #    print(cell)
+    rowc = worksheet.max_row + 1
+    for c in range(3, rowc):
+        voilist[worksheet.cell(row=c, column=1).value] = ''
+        #print(worksheet.cell(row=c, column=1).value)
     rootDir = os.path.dirname('uploads/')
     fileName = os.path.join(rootDir, 'ba10m_l_N10_nlin2Stdicbm152casym.nii.gz')
-    voilist['Fp1'] = fileName
+    voilist['Area Fp1'] = fileName
     fileName = os.path.join(rootDir, 'ba10p_l_N10_nlin2Stdicbm152casym.nii.gz')
-    voilist['Fp2'] = fileName
+    voilist['Area Fp2'] = fileName
+    #print(voilist)
     return voilist
 
 def performJugexFromFiles():

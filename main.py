@@ -14,6 +14,7 @@ class SearchForm(Form):
 genes = backend.readGeneList()
 genelist = ""
 voilist = backend.createVoiList()
+print(voilist)
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -26,7 +27,11 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     form = SearchForm(request.form)
-    return render_template('index.html', form=form)
+    areanames = []
+    for k,v in voilist.items():
+        areanames.append(k)
+    return render_template('index.html', form=form, areanames=areanames)
+#    return render_template('index.html', form=form)
 
 @app.route('/_jugex')
 def jugex():
@@ -73,8 +78,6 @@ def selectVois2():
         print(voilist[region])
         backend.voinames.append(voilist[region])
         return ('', 204)
-        #return render_template('index.html', form=form)
-
 
 @app.route('/_autocomplete', methods=['GET'])
 def autocomplete():

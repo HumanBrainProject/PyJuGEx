@@ -44,8 +44,9 @@ body {
 <p>
     <label>Area 1</label>
     <select name = "regionList1">
-       <option value = "Fp1">Fp1</option>
-       <option value = "Fp2">Fp2</option>
+        {% for x in areanames %}
+            <option value = "{{ x }}">{{ x }}</option>
+        {% endfor %}
     </select>
     <button type="submit">Submit!</button>
 </p>
@@ -54,8 +55,9 @@ body {
 <p>
     <label>Area 2</label>
     <select name = "regionList2">
-       <option value = "Fp1">Fp1</option>
-       <option value = "Fp2">Fp2</option>
+        {% for x in areanames %}
+            <option value = "{{ x }}">{{ x }}</option>
+        {% endfor %}
     </select>
     <button type="submit">Submit!</button>
 </p>
