@@ -874,6 +874,7 @@ def writeGeneList():
         print('Allen Brain Data has not been downloaded')
         return
     geneList = dict()
+    geneList['probe_id'] = []
     geneList['entrez_id'] = []
     geneList['gene_symbol'] = []
     for d in donorIds:
@@ -885,16 +886,21 @@ def writeGeneList():
         with open(fileName) as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                val = row['entrez_id']
+                valp = row['probe_id']
+                #vale = row['entrez_id']
                 try:
-                    geneList['entrez_id'].append(str(val))
+                    geneList['probe_id'].append(str(valp))
+                    #geneList['entrez_id'].append(str(vale))
                 except:
                     pass
                 geneList['gene_symbol'].append(row['gene_symbol'])
-    uniqueEntrezId = np.unique(geneList['entrez_id'])
+
+    uniqueProbeId = np.unique(geneList['probe_id'])
+    #uniqueEntrezId = np.unique(geneList['entrez_id'])
     with open('geneList.txt', 'w') as outfile:
-        json.dump(uniqueEntrezId.tolist(), outfile)
-    print(len(uniqueEntrezId))
+        json.dump(uniqueProbeId.tolist(), outfile)
+        #json.dump(uniqueEntrezId.tolist(), outfile)
+    print(len(uniqueProbeId))
 
 
 def readGeneList():

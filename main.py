@@ -8,13 +8,13 @@ from wtforms import TextField, Form
 app = Flask(__name__)
 
 class SearchForm(Form):
-    autocomp = TextField('Insert Entrez_id', id='gene_autocomplete')
+    autocomp = TextField('Insert Probe_id', id='gene_autocomplete')
 
 #backend.writeGeneList()
 genes = backend.readGeneList()
 genelist = ""
 voilist = backend.createVoiList()
-print(voilist)
+
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
 app.config['UPLOAD_FOLDER'] = 'uploads/'
