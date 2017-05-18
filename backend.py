@@ -16,7 +16,7 @@ from rpy2.robjects.vectors import StrVector
 from numpy.random import normal
 from wtforms import TextField, Form
 from openpyxl import load_workbook
-
+import main
 voinames = []
 
 def readSpecimenFactors():
@@ -117,21 +117,6 @@ def readCSVFile(filename):
     return rows
 
 def extractExpLevel(apiData, vois, specimenInfo, Mni, mapThreshold, searchMode):
-    #
-    #maps = struct('pmap',pmap,...
-    #    'name',name,...
-    #   'bar_plot_color',bar_plot_color,...
-    #    'validated_zscores','',...
-    #    'correlation_coeff','',...
-    #    'specimen','');
-
-    #main_r= struct('pmap','',...
-    #    'name','',...
-     #   'bar_plot_color','',...
-     #   'validated_zscores','',...
-     #   'correlation_coeff','',...
-     #   'specimen','',...
-     #   'data2plot','');
     main_r = []
     for i in range(0, len(specimenInfo)):
         revisedApiDataCombo = dict()
@@ -203,7 +188,7 @@ def switch2gensymbol(entrez_id, combined_zscores, area1Len, area2Len):
     return res
 
 
-def performAnova(main_r, searchMode,geneList):
+def performAnova(main_r, searchMode, geneList):
     #Get data ready for anova
     #factors={factor_area factor_specimen factor_age_numeric factor_race}; varnames = {'Area';'Specimen';'Age';'Race'};
     r = robjects.r
@@ -284,7 +269,7 @@ def performAnova(main_r, searchMode,geneList):
     print(factor_race)
     print('age')
     print(factor_age_numeric)
-
+    print('Should have enetered here wtih ', searchMode, ' ', type(searchMode))
     if searchMode == 1:
         #geneList = readCSVFile('./MDD_Gene_List.csv')
         print(len(geneList))
@@ -303,11 +288,7 @@ def performAnova(main_r, searchMode,geneList):
                     geneIds.append(geneList['gene_symbol'][j])
                     break
         print(geneIds)
-        '''
-        np.savetxt('switch2gensymbol1.txt', combined_zscores, fmt='%-7.3f ')
-        np.savetxt('switch2gensymbol3.txt', area1_zscores, fmt='%-7.3f ')
-        np.savetxt('switch2gensymbol4.txt', area2_zscores, fmt='%-7.3f ')
-        '''
+
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
         print(n_genes)
         Reference_Anovan_p = np.zeros(n_genes)
@@ -324,14 +305,8 @@ def performAnova(main_r, searchMode,geneList):
         Reference_Anovan_CI_h = np.zeros(n_genes)
         Reference_Anovan_diff_mean = np.zeros(n_genes)
         F_vec_ref_anovan = np.zeros(n_genes)
-        #print(robjects.r['pi'])
-        #print(combined_zscores[2]," ",len(combined_zscores))
-    #print('some info')
-    #np.savetxt('zscores.txt', combined_zscores, fmt='%f ')
-    #for i in range(0, n_genes):
-        #z = robjects.FloatVector(combined_zscores[:,i])
-        #print(z)
 
+    print(searchMode)
     for i in range(0, n_genes):
         print(i+1)
         od = rlc.OrdDict([('Area', robjects.StrVector(factor_area)),
@@ -376,14 +351,7 @@ def performAnova(main_r, searchMode,geneList):
         Reference_Anovan_CI_h[i] = v + sm1m2
         Reference_Anovan_diff_mean[i] = v
         Reference_Anovan_p[i] = summary[0][4][0] #p(1)
-    '''
-    np.savetxt('F_vec_ref_anovan.txt', F_vec_ref_anovan, fmt='%f')
-    np.savetxt('Reference_Anovan_eta2.txt', Reference_Anovan_eta2, fmt='%f')
-    np.savetxt('Reference_Anovan_CI_l.txt', Reference_Anovan_CI_l, fmt='%f')
-    np.savetxt('Reference_Anovan_CI_h.txt', Reference_Anovan_CI_h, fmt='%f')
-    np.savetxt('Reference_Anovan_diff_mean.txt', Reference_Anovan_diff_mean, fmt='%f')
-    np.savetxt('Reference_Anovan_p.txt', Reference_Anovan_p, fmt='%f')
-    '''
+
     n_rep = 1000
     #n_rep = 1
     FWE_corrected_p = np.zeros(n_genes)
@@ -397,17 +365,6 @@ def performAnova(main_r, searchMode,geneList):
         for j in range(0, n_genes):
             shuffle = np.random.permutation(factor_area)
             f = robjects.StrVector(shuffle)
-            #f = ['img1', 'img2', 'img2', 'img2', 'img1', 'img2', 'img1', 'img2', 'img1', 'img1', 'img2', 'img2', 'img2']
-            #v = robjects.StrVector(f)
-            '''
-            od = rlc.OrdDict([('Area', robjects.StrVector(factor_area)),
-                              ('Specimen', robjects.StrVector(factor_specimen)),
-                              ('Age', robjects.IntVector(factor_age_numeric)),
-                              ('Race', robjects.StrVector(factor_race)),
-                              ('Zscores', robjects.FloatVector(combined_zscores[:,i]))])
-
-            od = rlc.OrdDict([('Area', v),
-            '''
             od = rlc.OrdDict([('Area', f),
                               ('Specimen', robjects.StrVector(factor_specimen)),
                               ('Age', robjects.IntVector(factor_age_numeric)),
@@ -475,16 +432,6 @@ def expressionSpmCorrelation(apiData, img1, specimen, Mni, mapThreshold, searchM
     revisedApiData['probes'] = []
     revisedApiData['specimen'] = []
     Mni = specimen['alignment3d']
-    '''
-    Mni = np.zeros((4, 4))
-    Mni[0][0] = -1
-    Mni[0][3] = 91
-    Mni[1][2] = -1
-    Mni[1][3] = 91
-    Mni[2][1] = -1
-    Mni[2][3] = 109
-    Mni[3][3] = 1
-    '''
     #Create a numpy matrix and double check Mni = []
     if searchMode == 2:
         zscores = apiData['zscores']
@@ -563,31 +510,6 @@ def expressionSpmCorrelation(apiData, img1, specimen, Mni, mapThreshold, searchM
 def getSpecimenData(info):
     #info = msg[0]
     specimenD = dict()
-    '''
-    specimenD['cell_prep_sample_id'] = info.cell_prep_sample_id
-    specimenD['cell_reporter_id'] = info.cell_reporter_id
-    specimenD['data'] = info.data
-    specimenD['donor_id'] = info.donor_id
-    specimenD['ephys_result_id'] = info.ephys_result_id
-    specimenD['external_specimen_name'] = info.external_specimen_name
-    specimenD['failed_facet'] = info.failed_facet
-    specimenD['hemisphere'] = info.hemisphere
-    specimenD['id'] = info.id
-    specimenD['is_cell_specimen'] = info.is_cell_specimen
-    specimenD['is_ish'] = info.is_ish
-    specimenD['name'] = info.name
-    specimenD['parent_id'] = info.parent_id
-    specimenD['parent_x_coord'] = info.parent_x_coord
-    specimenD['parent_y_coord'] = info.parent_y_coord
-    specimenD['parent_z_coord'] = info.parent_z_coord
-    specimenD['rna_integrity_number'] = info.rna_integrity_number
-    specimenD['specimen_id_path'] = info.specimen_id_path
-    specimenD['sphinx_id'] = info.sphinx_id
-    specimenD['structure_id'] = info.structure_id
-    specimenD['tissue_ph'] = info.tissue_ph
-    specimenD['treatment_id'] = info.treatment_id
-    specimenD['weight'] = info.weight
-    '''
     specimenD['name'] = info['name']
     x = info['alignment3d']
     alignment3dMat = np.zeros((4, 4))
@@ -823,6 +745,7 @@ def performJugex():
     path = './uploads/'
     vois = []
     print(voinames)
+    searchMode = int(main.mode)
     for f in voinames:
         print(f)
         vois.append(readVOI(f))
@@ -830,39 +753,24 @@ def performJugex():
     print(vois[0].header)
     print(vois[1].header)
     geneList = dict()
-    for filename in os.listdir(path):
-        files = path+filename
-        extension = files.rsplit('.', 1)[1]
-        if(extension == 'csv'):
-            geneList = readCSVFile(files)
-        '''
-        else:
-            vois.append(readVOI(files))
-        '''
-    #for i in range(0, len(geneList['probe_id'])):
-    #    print(geneList['probe_id'], geneList['gene_symbol'], geneList['entrez_id'])
+    if searchMode == 1:
+        for filename in os.listdir(path):
+            files = path+filename
+            extension = files.rsplit('.', 1)[1]
+            if(extension == 'csv'):
+                geneList = readCSVFile(files)
+    elif searchMode == 2:
+        geneList = main.genelist
     donorIds = ['15496','14380','15697','9861','12876','10021']
-    '''
-    apiData = getAPIData(donorIds, geneList['probe_id'])
-    specimenInfo = downloadSpecimens()
-    saveSpecimenData(donorIds, apiData, specimenInfo)
-    '''
+    if searchMode == 1:
+        apiData = getAPIData(donorIds, geneList['probe_id'])
+        specimenInfo = downloadSpecimens()
+        saveSpecimenData(donorIds, apiData, specimenInfo)
     res = readCachedApiSpecimenData(donorIds)
-    '''
-    for i in range(0, len(res['apiData'])):
-        print('After reading cached data ',len(res['apiData'][i]['samples']),' ',len(res['apiData'][i]['probes']),' ',res['apiData'][i]['zscores'].shape,' ',res['apiData'][i]['explevels'].shape)
-    for i in range(0, len(res['apiData'][0]['samples'])):
-        if(apiData[0]['samples'][i]['sample']['mri'] != res['apiData'][0]['samples'][i]['sample']['mri']):
-            print('Diff samples ',apiData[0]['samples'][i]['sample']['mri'],' ',res['apiData'][0]['samples'][i]['sample']['mri'])
-    for i in range(0, len(res['apiData'][0]['zscores'])):
-        for j in range(0, len(res['apiData'][0]['zscores'][i])):
-            if(res['apiData'][0]['zscores'][i][j] != apiData[0]['zscores'][i][j]):
-                print('diff ',res['apiData'][0]['zscores'][i][j])
-    '''
     Mni = res['specimenInfo'][0]['alignment3d'] #GET THE CORRECT VALUE HERE
     print('Mni ',Mni)
     mapThreshold = 2
-    searchMode = 1
+    #searchMode = 1
     main_r = extractExpLevel(res['apiData'], vois, res['specimenInfo'], Mni, mapThreshold, searchMode)
     res = performAnova(main_r, searchMode, geneList)
     return res

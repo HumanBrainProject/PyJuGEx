@@ -10,10 +10,12 @@ app = Flask(__name__)
 class SearchForm(Form):
     autocomp = TextField('Insert Probe_id', id='gene_autocomplete')
 
+
 #backend.writeGeneList()
 genes = backend.readGeneList()
 genelist = ""
 voilist = backend.createVoiList()
+mode = 2
 
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
@@ -110,5 +112,14 @@ def createUrl():
         return ('', 204)
         #return render_template('index.html', form=form)
 
+
+@app.route('/_getMode', methods=['POST'])
+def getMode():
+    global mode
+    form = SearchForm(request.form)
+    if request.method == 'POST':
+        mode = request.form.get('mode')
+        print(mode)
+    return('', 204)
 if __name__ == '__main__':
     app.run(debug=True)
