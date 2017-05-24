@@ -25,7 +25,7 @@ body {
 <body>
 <div class="container">
 <div class="header">
-<h3 class="text-muted">Flask JuGex</h3>
+<h3 class="text-muted">Web JuGex</h3>
 </div>
 <hr/>
 <div>
@@ -33,12 +33,14 @@ body {
 <p>
 <p>
 <p>
+<!--
 <form action="/_getMode" method="post">
 <p>Choose Mode:</p>
 <input type="radio" name="mode" id="mode1" value="1"/> 1 <br>
 <input type="radio" name="mode" id="mode2" value="2"/> 2 <br>
 <input type="submit" value="Submit!" />
 </form>
+-->
 <p>
 <p>
 <p>
@@ -90,9 +92,14 @@ body {
 <p>
 <p>
 <p>
-<input type = "button" class = "wrapper" onclick = "runJugex()" value = "Run JuGex Analysis" />
-
-<!--<p><a href="javascript:void();" id="calculate">Perform JuGex</a>-->
+<input type = "button" class = "wrapper"  id = "JuGexId"  onclick = "runJugex()" value = "Submit JuGex Analysis" />
+<hr>
+<p><b>Pending Analysis:</b></p>
+<p id="PendingAnalysis"></p>
+<p>
+<p>
+<p>
+<hr>
 <p><b>Genes and their p values:</b></p>
 <div id="dvTable">
 </div>

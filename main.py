@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, json, redirect, url_for, send_from_directory, Response
 from werkzeug import secure_filename
-import backend, readapi, readfiles, os
+import backend, readapi, os
 from wtforms import TextField, Form
 
 # Initialize the Flask application
@@ -11,11 +11,11 @@ class SearchForm(Form):
     autocomp = TextField('Insert Probe_id', id='gene_autocomplete')
 
 
-#backend.writeGeneList()
+backend.writeGeneList()
 genes = backend.readGeneList()
 genelist = ""
 voilist = backend.createVoiList()
-mode = 2
+mode = 1
 
 if not os.path.exists('uploads/'):
     os.makedirs('uploads/')
@@ -122,4 +122,5 @@ def getMode():
         print(mode)
     return('', 204)
 if __name__ == '__main__':
-    app.run(debug=True)
+#    app.run(debug=True)
+     app.run(host='0.0.0.0', port=8080)

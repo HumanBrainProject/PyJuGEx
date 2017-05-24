@@ -52,6 +52,8 @@ function dummy() {
 }
 
 function runJugex(){
+    document.getElementById("PendingAnalysis").innerHTML = "JuGex";
+    //$("#JuGexId").prop("disabled", true);
     $.getJSON('/_jugex', {
               }, function(data) {
                   var elem = document.getElementById("myBar");
@@ -92,9 +94,11 @@ function runJugex(){
                   dvTable.innerHTML = "";
                   dvTable.appendChild(table);
                   dvTable.style="height:200px; overflow-y: scroll;"
+                  document.getElementById("PendingAnalysis").innerHTML = "";
                   //document.getElementById("dvTable").childNodes[0].style.backgroundColor = "yellow";
               });
-
+    //document.getElementById("PendingAnalysis").innerHTML = "";
+    document.getElementById("JuGexId").disabled = false;
 }
 
 function sendToServer(geneName) {
