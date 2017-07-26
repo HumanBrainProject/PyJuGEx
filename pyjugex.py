@@ -1,10 +1,23 @@
-# -*- coding: utf-8 -*-
+import analysis as mymodule
+import nibabel as nib
+import urllib.request
+import json
+import csv
 
-try:
-    from PySide import QtWidgets
-except:
-    from PyQt5 import QtWidgets
+def DifferentialGeneExpression():
+    analysisjugex = mymodule.Analysis()
+    return analysisjugex
 
+def readCSVFile(filename):
+    rows = dict();
+    rows['probe_id'] = []
+    rows['gene_symbol'] = []
+    rows['entrez_id'] = []
+    with open(filename) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            rows['probe_id'].append(row['probe_id'])
+            rows['gene_symbol'].append(row['gene_symbol'])
+            rows['entrez_id'].append(int(row['entrez_id']))
+    return rows
 
-class pyjugex:
-    def __init__(self):

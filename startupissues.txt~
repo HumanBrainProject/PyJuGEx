@@ -1,0 +1,301 @@
+hbhattacharya@medpc060 ~]$ cd hb
+bash: cd: hb: No such file or directory
+[hbhattacharya@medpc060 ~]$ cd work/
+[hbhattacharya@medpc060 work]$ cd hbp/
+[hbhattacharya@medpc060 hbp]$ source ~/env/bin/activate
+(env) [hbhattacharya@medpc060 hbp]$ ls
+backgroundProgress     Django-Celery-Example    examples                                                    JuGex                   JuGexWorkingTemplateV2   npmwebpacktest             spm12                   testR2016awithtwo
+copyPDJ                Djangocombined           Flask-Autocomplete-master                                   JuGexCopy               mricron_lx               package.json               statictest              test.txt~
+copyPDJOutput          DjangoJugex              FlaskJugex                                                  JuGexInPapaya           mysite                   papaya                     TestChildProcess        typescriptandjavascript
+copyPDJV1              DjangoJuGex              FlaskJugex1                                                 jugex.mat               NeuroglancerJuGexDjango  papayadup                  test.js
+diffFolder             DjangoNpmWebpackReactJS  FlaskJugex-master-1cb2d950b6ddfa3a33b85af94957409186b6c80a  JuGex_test              neuroglancer-master      PapayaJugexDjango          test.js~
+djangoajax             DjangoTest               FlaskJugex_smallsize                                        JuGexWorkingTemplate    niftiTest                PapayaJugexDjangoOriginal  testNeuroglancerDjango
+django-ajax-test       drf-react-master         FlaskJugex_smallsize.zip                                    JuGexWorkingTemplate1   niftiTest.tar.gz         PapayaJugexDjango.zip      testProgressBar
+django_angular-master  env                      FlaskJugexV1                                                JuGexWorkingTemplateV1  node_modules             pythonnodecommunication    testR2016awithfull
+(env) [hbhattacharya@medpc060 hbp]$ cd Flask
+Flask-Autocomplete-master/                                  FlaskJugex-master-1cb2d950b6ddfa3a33b85af94957409186b6c80a/ FlaskJugexV1/
+FlaskJugex/                                                 FlaskJugex_smallsize/                                       
+FlaskJugex1/                                                FlaskJugex_smallsize.zip                                    
+(env) [hbhattacharya@medpc060 hbp]$ cd Flask
+Flask-Autocomplete-master/                                  FlaskJugex-master-1cb2d950b6ddfa3a33b85af94957409186b6c80a/ FlaskJugexV1/
+FlaskJugex/                                                 FlaskJugex_smallsize/                                       
+FlaskJugex1/                                                FlaskJugex_smallsize.zip                                    
+(env) [hbhattacharya@medpc060 hbp]$ cd FlaskJugex-master-1cb2d950b6ddfa3a33b85af94957409186b6c80a/^C
+(env) [hbhattacharya@medpc060 hbp]$ mv FlaskJugex-master-1cb2d950b6ddfa3a33b85af94957409186b6c80a/ FlaskJugexWorld
+(env) [hbhattacharya@medpc060 hbp]$ cd FlaskJugexWorld/
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ ls
+backend.py  main.py  __pycache__  static  templates
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ ls
+backend.py  main.py  __pycache__  static  templates
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs main.py 
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ export FLASK_APP=main.py
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Traceback (most recent call last):
+  File "/usr/lib64/python3.5/runpy.py", line 184, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/usr/lib64/python3.5/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/__main__.py", line 15, in <module>
+    main(as_module=True)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 513, in main
+    cli.main(args=args, prog_name=name)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 380, in main
+    return AppGroup.main(self, *args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 1066, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/decorators.py", line 64, in new_func
+    return ctx.invoke(f, obj, *args[1:], **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 423, in run_command
+    app = DispatchingApp(info.load_app, use_eager_loading=eager_loading)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 152, in __init__
+    self._load_unlocked()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 176, in _load_unlocked
+    self._app = rv = self.loader()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 237, in load_app
+    rv = locate_app(self.app_import_path)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 90, in locate_app
+    __import__(module)
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/main.py", line 3, in <module>
+    import backend, readapi, readfiles, os
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/backend.py", line 6, in <module>
+    import readfiles
+ImportError: No module named 'readfiles'
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs backend.py 
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ ls
+backend.py  backend.py~  main.py  __pycache__  static  templates
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ ls
+backend.py  backend.py~  main.py  __pycache__  static  templates
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ ls
+backend.py  backend.py~  main.py  __pycache__  static  templates
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Traceback (most recent call last):
+  File "/usr/lib64/python3.5/runpy.py", line 184, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/usr/lib64/python3.5/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/__main__.py", line 15, in <module>
+    main(as_module=True)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 513, in main
+    cli.main(args=args, prog_name=name)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 380, in main
+    return AppGroup.main(self, *args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 1066, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/decorators.py", line 64, in new_func
+    return ctx.invoke(f, obj, *args[1:], **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 423, in run_command
+    app = DispatchingApp(info.load_app, use_eager_loading=eager_loading)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 152, in __init__
+    self._load_unlocked()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 176, in _load_unlocked
+    self._app = rv = self.loader()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 237, in load_app
+    rv = locate_app(self.app_import_path)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 90, in locate_app
+    __import__(module)
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/main.py", line 3, in <module>
+    import backend, readapi, readfiles, os
+ImportError: No module named 'readapi'
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs main.py 
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ cp ../FlaskJugex/readapi.py ./
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Traceback (most recent call last):
+  File "/usr/lib64/python3.5/runpy.py", line 184, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/usr/lib64/python3.5/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/__main__.py", line 15, in <module>
+    main(as_module=True)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 513, in main
+    cli.main(args=args, prog_name=name)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 380, in main
+    return AppGroup.main(self, *args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 1066, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/decorators.py", line 64, in new_func
+    return ctx.invoke(f, obj, *args[1:], **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 423, in run_command
+    app = DispatchingApp(info.load_app, use_eager_loading=eager_loading)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 152, in __init__
+    self._load_unlocked()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 176, in _load_unlocked
+    self._app = rv = self.loader()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 237, in load_app
+    rv = locate_app(self.app_import_path)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 90, in locate_app
+    __import__(module)
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/main.py", line 3, in <module>
+    import backend, readapi, readfiles, os
+ImportError: No module named 'readfiles'
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs main.py 
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs main.py 
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Traceback (most recent call last):
+  File "/usr/lib64/python3.5/runpy.py", line 184, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/usr/lib64/python3.5/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/__main__.py", line 15, in <module>
+    main(as_module=True)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 513, in main
+    cli.main(args=args, prog_name=name)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 380, in main
+    return AppGroup.main(self, *args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 1066, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/decorators.py", line 64, in new_func
+    return ctx.invoke(f, obj, *args[1:], **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 423, in run_command
+    app = DispatchingApp(info.load_app, use_eager_loading=eager_loading)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 152, in __init__
+    self._load_unlocked()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 176, in _load_unlocked
+    self._app = rv = self.loader()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 237, in load_app
+    rv = locate_app(self.app_import_path)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 90, in locate_app
+    __import__(module)
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/main.py", line 15, in <module>
+    genes = backend.readGeneList()
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/backend.py", line 814, in readGeneList
+    f = open('geneList.txt', "r")
+FileNotFoundError: [Errno 2] No such file or directory: 'geneList.txt'
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ cp ../FlaskJugex/geneList.txt^C/
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs main.py
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Allen Brain Data has not been downloaded
+Traceback (most recent call last):
+  File "/usr/lib64/python3.5/runpy.py", line 184, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/usr/lib64/python3.5/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/__main__.py", line 15, in <module>
+    main(as_module=True)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 513, in main
+    cli.main(args=args, prog_name=name)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 380, in main
+    return AppGroup.main(self, *args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 1066, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/decorators.py", line 64, in new_func
+    return ctx.invoke(f, obj, *args[1:], **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 423, in run_command
+    app = DispatchingApp(info.load_app, use_eager_loading=eager_loading)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 152, in __init__
+    self._load_unlocked()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 176, in _load_unlocked
+    self._app = rv = self.loader()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 237, in load_app
+    rv = locate_app(self.app_import_path)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 90, in locate_app
+    __import__(module)
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/main.py", line 15, in <module>
+    genes = backend.readGeneList()
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/backend.py", line 814, in readGeneList
+    f = open('geneList.txt', "r")
+FileNotFoundError: [Errno 2] No such file or directory: 'geneList.txt'
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs main.py
+^C^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ eamcs ../FlaskJugex/geneList.txt 
+bash: eamcs: command not found
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs ../FlaskJugex/geneList.txt 
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ cp ../FlaskJugex/geneList.txt ./
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Allen Brain Data has not been downloaded
+Traceback (most recent call last):
+  File "/usr/lib64/python3.5/runpy.py", line 184, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/usr/lib64/python3.5/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/__main__.py", line 15, in <module>
+    main(as_module=True)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 513, in main
+    cli.main(args=args, prog_name=name)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 380, in main
+    return AppGroup.main(self, *args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 1066, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/decorators.py", line 64, in new_func
+    return ctx.invoke(f, obj, *args[1:], **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 423, in run_command
+    app = DispatchingApp(info.load_app, use_eager_loading=eager_loading)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 152, in __init__
+    self._load_unlocked()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 176, in _load_unlocked
+    self._app = rv = self.loader()
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 237, in load_app
+    rv = locate_app(self.app_import_path)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/flask/cli.py", line 90, in locate_app
+    __import__(module)
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/main.py", line 17, in <module>
+    voilist = backend.createVoiList()
+  File "/home/hbhattacharya/work/hbp/FlaskJugexWorld/backend.py", line 822, in createVoiList
+    workbook = load_workbook('2016-02-16_JuBrainOntologyAndLabels.xlsx')
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/openpyxl/reader/excel.py", line 164, in load_workbook
+    archive = _validate_archive(filename)
+  File "/home/hbhattacharya/env/bin/lib/python3.5/site-packages/openpyxl/reader/excel.py", line 118, in _validate_archive
+    archive = ZipFile(filename, 'r', ZIP_DEFLATED)
+  File "/usr/lib64/python3.5/zipfile.py", line 1009, in __init__
+    self.fp = io.open(file, filemode)
+FileNotFoundError: [Errno 2] No such file or directory: '2016-02-16_JuBrainOntologyAndLabels.xlsx'
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ cp ../FlaskJugex/2016-02-16_JuBrainOntologyAndLabels.xlsx ./
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Allen Brain Data has not been downloaded
+ * Serving Flask app "main"
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]emacs backend.py
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run
+Allen Brain Data has not been downloaded
+ * Serving Flask app "main"
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs geneList.txt 
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ rm ^C
+(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ emacs backend.py
+^C(env) [hbhattacharya@medpc060 FlaskJugexWorld]$ python -m flask run

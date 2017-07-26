@@ -1,0 +1,3 @@
+        <label for="imageUpload" class="btn btn-primary btn-block btn-outlined">Import Gene list</label>
+        <input type="file" id="imageUpload" multiple="" name="file[]" style="display: none">
+        <input type="submit" value="Submit" class="span2">
