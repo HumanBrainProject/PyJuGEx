@@ -12,9 +12,11 @@ parcels['l1'] = nib.load('files/ba10p_l_N10_nlin2Stdicbm152casym.nii.gz')
 # specify candidate genes and trigger the workflow
 analysis = pyjugex.DifferentialGeneExpression()
 genelist = pyjugex.readCSVFile('files/MDD_Gene_List.csv') #CHECK THIS OUT
-if refresh_cache is True:
+if refresh_cache is False:
     analysis.retrieve_gene_data(genelist, gene_cache)
-analysis.set_candidate_genes(genelist, gene_cache)
+else:
+    analysis.download_and_retrieve_gene_data(genelist, gene_cache)
+analysis.set_candidate_genes(genelist, gene_cache, refresh_cache)
 analysis.set_coordinates_region(parcels['l0'], 0)
 analysis.set_coordinates_region(parcels['l1'], 1)
 analysis.run()
