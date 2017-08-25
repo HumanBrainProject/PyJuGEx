@@ -13,104 +13,43 @@ import scipy as sp
 import scipy.stats.mstats
 import itertools
 
-def switch2gensymbol(entrez_id, combined_zscores, area1Len, area2Len):
+def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
     unique_entrez_id = np.unique(entrez_id)
-    print(unique_entrez_id)
-    inds =  [[] for _ in range(len(unique_entrez_id))]
-    for i in range(0, len(unique_entrez_id)):
-        for j in range (0, len(entrez_id)):
-            if unique_entrez_id[i] == entrez_id[j]:
-                inds[i].append(j)
+    indices = [np.where(np.in1d(entrez_id, x))[0] for x in unique_entrez_id]
     winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_entrez_id)))
+    print(len(combined_zscores),' ',len(combined_zscores[0]),' ',len(indices))
+    tmp = [[] for _ in range(len(combined_zscores))]
     for i in range (0, len(unique_entrez_id)):
-        tmp = [[] for _ in range(len(combined_zscores))]
         for j in range(0, len(combined_zscores)):
-            for k in range (0, len(inds[i])):
-                tmp[j].append(combined_zscores[j][inds[i][k]])
-            ncols = len(tmp[j])
-        for j in range(0, len(combined_zscores)):
-            winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1))#maybe add a special case for one element in tmp
+            tmp[j] = [combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))]
+            winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1)) #maybe add a special case for one element in tmp
     print(len(winsorzed_mean_zscores),' ',len(winsorzed_mean_zscores[0]))
     res = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
     res['uniqueId'] = unique_entrez_id
     res['combined_zscores'] = winsorzed_mean_zscores
-    '''
-    res['area1_zscores'] = winsorzed_mean_zscores[0:area1Len]
-    res['area2_zscores'] = winsorzed_mean_zscores[area1Len:area1Len+area2Len]
-    '''
-    res['area1_zscores'] = []
-    res['area2_zscores'] = []
-    for i in range(0, area1Len):
-           res['area1_zscores'].append(winsorzed_mean_zscores[i])
-    for i in range(0, area2Len):
-           res['area2_zscores'].append(winsorzed_mean_zscores[i+area1Len])
+    res['area1_zscores'] = winsorzed_mean_zscores[0:area1len]
+    res['area2_zscores'] = winsorzed_mean_zscores[area1len:]
     return res
 
 def getSpecimenData(info):
-    #info = msg[0]
     specimenD = dict()
     specimenD['name'] = info['name']
     x = info['alignment3d']
-    alignment3dMat = np.zeros((4, 4))
-    alignment3dMat[0][0] = x['tvr_00']
-    alignment3dMat[0][1] = x['tvr_01']
-    alignment3dMat[0][2] = x['tvr_02']
-    alignment3dMat[0][3] = x['tvr_09']
-    alignment3dMat[1][0] = x['tvr_03']
-    alignment3dMat[1][1] = x['tvr_04']
-    alignment3dMat[1][2] = x['tvr_05']
-    alignment3dMat[1][3] = x['tvr_10']
-    alignment3dMat[2][0] = x['tvr_06']
-    alignment3dMat[2][1] = x['tvr_07']
-    alignment3dMat[2][2] = x['tvr_08']
-    alignment3dMat[2][3] = x['tvr_11']
-    alignment3dMat[3][0] = 0
-    alignment3dMat[3][1] = 0
-    alignment3dMat[3][2] = 0
-    alignment3dMat[3][3] = 1
-    specimenD['alignment3d'] =  alignment3dMat
+    specimenD['alignment3d'] = np.array([[x['tvr_00'], x['tvr_01'], x['tvr_02'], x['tvr_09']],
+    [x['tvr_03'], x['tvr_04'], x['tvr_05'], x['tvr_10']],
+    [x['tvr_06'], x['tvr_07'], x['tvr_08'], x['tvr_11']],
+    [0, 0, 0, 1]])
     return specimenD
 
 def transformSamples(samples, T):
-    '''
-    nsamples = len(samples)
-    coords = []
-    T00 = T[0][0]
-    T01 = T[0][1]
-    T02 = T[0][2]
-    T03 = T[0][3]
-    T10 = T[1][0]
-    T11 = T[1][1]
-    T12 = T[1][2]
-    T13 = T[1][3]
-    T20 = T[2][0]
-    T21 = T[2][1]
-    T22 = T[2][2]
-    T23 = T[2][3]
-    for i in range(0, nsamples):
-        mri = samples[i]['sample']['mri']
-        x = mri[0]
-        y = mri[1]
-        z = mri[2]
-        coords.append([T00*x + T01*y + T02*z + T03, T10*x + T11*y + T12*z + T13, T20*x + T21*y + T22*z + T23])
-    print(len(coords))
-    return coords
-    '''
-    coords = []
-    print(T.shape)
-    print(T)
     np_T = np.array(T[0:3, 0:4])
-    print(np_T.shape)
-    print(np_T)
-    for s in samples:
-        mri = s["sample"]["mri"]
-        mri = mri + [1]
-        np_mri = np.array(mri)
-        np_mri = np.matmul(np_T, np_mri)
-        coords.append(np_mri)
+    mri = np.vstack(s["sample"]["mri"] for s in samples)
+    add = np.ones((len(mri), 1), dtype=np.int)
+    mri = np.append(mri, add, axis=1)
+    mri = np.transpose(mri)
+    coords = np.matmul(np_T, mri)
+    coords = coords.transpose()
     return coords
-
-
 
 #NO NEED TO DOWNLOAD AT ALL, READ FROM DISK
 
@@ -237,23 +176,20 @@ class Analysis:
         Mni = specimen['alignment3d']
         T = np.dot(invimgMni, Mni)
         coords = transformSamples(apidataind['samples'], T)
+        coords = np.rint(coords)
+        '''
         for i in range(0, len(coords)):
             coords[i] = np.rint(coords[i])
+        '''
         for i in range(0, len(coords)):
             coord = coords[i]
-            sum = 0
-            for j in range(0, len(coord)):
-                if(coord[j] > 0):
-                    sum += 1
-            if(sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold/10 or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0):
+            sum = (coord > 0).sum()
+            if sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold/10 or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0:
                 coords[i] = [-1, -1, -1]
         for i in range(0, len(coords)):
             coord = coords[i]
-            sum = 0
-            for j in range(0, len(coord)) :
-                if(coord[j] > 0):
-                    sum += 1
-            if(sum == 3):
+            sum = (coord > 0).sum()
+            if sum == 3:
                 revisedApiData['zscores'].append(apidataind['zscores'][i])
                 revisedApiData['coords'].append(coord)
         revisedApiData['samples'] = apidataind['samples'][:]
@@ -270,9 +206,9 @@ class Analysis:
         print(len(genelist))
 
     def queryapi(self, donorId, probeIds):
-        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in";
+        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         for p in probeIds:
-            url += p;
+            url += p
             url += ","
         url = url[:-1]
         url += "][donors$eq"
@@ -293,12 +229,7 @@ class Analysis:
         nprobes = len(data['probes'])
         samples = data['samples']
         probes = data['probes']
-        '''
-        for i in range(0, nsamples):
-            samples.append(data['samples'][i])
-        for i in range(0, nprobes):
-            probes.append(data['probes'][i])
-        '''
+
         zscores = np.zeros((nsamples, nprobes))
         for i in range(0, nprobes):
             for j in range(0, nsamples):
@@ -336,7 +267,6 @@ class Analysis:
         apiData['samples'] = samples
         apiData['probes'] = probes
         apiData['zscores'] = zscores
-        print(len(apiData['samples']), ' ', apiData['zscores'].shape, ' ', ' ', len(apiData['probes']))
         return apiData
 
     def downloadspecimens(self):
@@ -381,33 +311,60 @@ class Analysis:
     def performAnova(self):
         r = robjects.r
         area1_zscores = []
+        area1_zscoresD = []
         area2_zscores = []
+        area2_zscoresD = []
         area1_specimen = []
+        area1_specimenD = []
         area2_specimen = []
-        area2_zscores = []
+        area2_specimenD = []
         area1_area = []
+        area1_areaD = []
         area2_area = []
+        area2_areaD = []
         combined_zscores = []
+        combined_zscoresD = []
         print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
         for i in range(0, len(self.main_r)):
             if(self.main_r[i]['name'] == 'img1'):
-                for j in range(0, len(self.main_r[i]['zscores'])):
-                    area1_zscores.append(self.main_r[i]['zscores'][j])
-                    combined_zscores.append(self.main_r[i]['zscores'][j])
-                    area1_specimen.append(self.main_r[i]['specimen'])
-                    area1_area.append(self.main_r[i]['name'])
+                area1_zscores = area1_zscores + self.main_r[i]['zscores'][:]
+                area1_specimen = area1_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
+                area1_area = area1_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
+                combined_zscores = combined_zscores + self.main_r[i]['zscores'][:]
             elif(self.main_r[i]['name'] == 'img2'):
-                for j in range(0, len(self.main_r[i]['zscores'])):
-                    area2_zscores.append(self.main_r[i]['zscores'][j])
-                    combined_zscores.append(self.main_r[i]['zscores'][j])
-                    area2_specimen.append(self.main_r[i]['specimen'])
-                    area2_area.append(self.main_r[i]['name'])
+                area2_zscores = area2_zscores + self.main_r[i]['zscores'][:]
+                area2_specimen = area2_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
+                area2_area = area2_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
+                combined_zscores = combined_zscores + self.main_r[i]['zscores'][:]
         '''
-        for i in range(0, len(area1_zscores)):
-            combined_zscores.append(area1_zscores[i])
-        for i in range(0, len(area2_zscores)):
-            combined_zscores.append(area2_zscores[i])
+        if(np.equal(np.array(area1_zscores).all(), np.array(area1_zscoresD).all())):
+            print('they are equal')
+        if(np.equal(np.array(area2_zscores).all(), np.array(area2_zscoresD).all())):
+            print('they are equal')
+
+        if(np.equal(np.array(area1_specimen), np.array(area1_specimenD))):
+            print('they are equal')
+        if(np.equal(np.array(area2_specimen), np.array(area2_specimenD))):
+            print('they are equal')
+        print(area1_specimen)
+        print(area1_specimenD)
+        print(area2_specimen)
+        print(area2_specimenD)
+        print(area1_area)
+        print(area1_areaD)
+        print(area2_area)
+        print(area2_areaD)
+        if(np.equal(np.array(area1_area), np.array(area1_areaD))):
+            print('they are equal')
+        if(np.equal(np.array(area2_area), np.array(area2_areaD))):
+            print('they are equal')
+
+        if(np.equal(np.array(combined_zscores).all(), np.array(combined_zscoresD).all())):
+            print('they are equal')
+        if(np.equal(np.array(combined_zscores).all(), np.array(combined_zscoresD).all())):
+            print('they are equal')
         '''
+
         factor_specimen = []
         factor_area = []
         factor_age = []
@@ -449,6 +406,7 @@ class Analysis:
         print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
         geneIds = []
+        geneIdsD = []
         for i in range(0, len(uniqueId)):
             for j in range(0, len(self.genelist['entrez_id'])):
                 if(self.genelist['entrez_id'][j] == uniqueId[i]):
