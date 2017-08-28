@@ -326,12 +326,12 @@ class Analysis:
         combined_zscoresD = []
         print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
         for i in range(0, len(self.main_r)):
-            if(self.main_r[i]['name'] == 'img1'):
+            if self.main_r[i]['name'] == 'img1':
                 area1_zscores = area1_zscores + self.main_r[i]['zscores'][:]
                 area1_specimen = area1_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
                 area1_area = area1_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
                 combined_zscores = combined_zscores + self.main_r[i]['zscores'][:]
-            elif(self.main_r[i]['name'] == 'img2'):
+            elif self.main_r[i]['name'] == 'img2':
                 area2_zscores = area2_zscores + self.main_r[i]['zscores'][:]
                 area2_specimen = area2_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
                 area2_area = area2_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
@@ -386,16 +386,20 @@ class Analysis:
         print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
         geneIds = []
-        geneIdsD = []
+        '''
         for i in range(0, len(uniqueId)):
             for j in range(0, len(self.genelist['entrez_id'])):
                 if(self.genelist['entrez_id'][j] == uniqueId[i]):
                     geneIds.append(self.genelist['gene_symbol'][j])
                     break
-        print(geneIds)
-#        if(np.equal(np.array(geneIds), np.array(geneIdsD))):
-#            print('they are equal')
-#        exit()
+        '''
+        st = set(self.genelist['entrez_id'])
+        for ind, a in enumerate(uniqueId):
+            index = 0
+            if a in st:
+                index = self.genelist['entrez_id'].index(a)
+            geneIds = geneIds + [self.genelist['gene_symbol'][index]]
+
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
         print(n_genes)
         Reference_Anovan_p = np.zeros(n_genes)
@@ -421,13 +425,21 @@ class Analysis:
             ss_between_group_area = summary[0][1][0] #tab{2,2}
             Reference_Anovan_eta2[i] = ss_between_group_area/ss_total
             var1 = []
+            var1d = []
+            var2d = []
             var2 = []
             row = combined_zscores[:,i]
+            var1d = var1d + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img1']
+            var2d = var2d + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img2']
             for j in range(0, len(row)):
                 if factor_area[j] == 'img1':
                     var1.append(combined_zscores[j][i])
                 if factor_area[j] == 'img2':
                     var2.append(combined_zscores[j][i])
+            if(np.equal(np.array(var1d).all(), np.array(var1).all())):
+                print('same')
+            if(np.equal(np.array(var2d).all(), np.array(var2).all())):
+                print('same')
             mse = (np.var(var1, ddof=1) + np.var(var2, ddof=1))*0.5
             sm1m2 = 2.011*sqrt((2*mse)/n_genes)
             mean1 = np.mean(var1)
