@@ -1,3 +1,281 @@
-        <label for="imageUpload" class="btn btn-primary btn-block btn-outlined">Import Gene list</label>
-        <input type="file" id="imageUpload" multiple="" name="file[]" style="display: none">
-        <input type="submit" value="Submit" class="span2">
+In retrieve_gene_data
+3
+285
+inside readcachedata  470   (470, 285)   285
+inside readcachedata  529   (529, 285)   285
+inside readcachedata  501   (501, 285)   285
+inside readcachedata  946   (946, 285)   285
+inside readcachedata  363   (363, 285)   285
+inside readcachedata  893   (893, 285)   285
+[[  -1.    0.    0.   91.]
+ [   0.    0.   -1.   91.]
+ [   0.   -1.    0.  109.]
+ [   0.    0.    0.    1.]]
+H0351.1015
+[[  -1.    0.    0.   91.]
+ [   0.    0.   -1.   91.]
+ [   0.   -1.    0.  109.]
+ [   0.    0.    0.    1.]]
+H0351.1012
+[[  -1.    0.    0.   91.]
+ [   0.    0.   -1.   91.]
+ [   0.   -1.    0.  109.]
+ [   0.    0.    0.    1.]]
+H0351.1016
+[[ -1.05600000e+00  -7.50000000e-03  -2.68000000e-02   1.01275400e+02]
+ [ -2.51000000e-02  -2.81600000e-01  -1.04740000e+00   1.10593900e+02]
+ [ -2.05000000e-02  -1.06910000e+00   1.95300000e-01   8.44653000e+01]
+ [  0.00000000e+00   0.00000000e+00   0.00000000e+00   1.00000000e+00]]
+H0351.2001
+[[  -1.    0.    0.   91.]
+ [   0.    0.   -1.   91.]
+ [   0.   -1.    0.  109.]
+ [   0.    0.    0.    1.]]
+H0351.1009
+[[ -1.12060000e+00   9.40000000e-03   1.28000000e-02   1.03513400e+02]
+ [ -1.89000000e-02  -3.93000000e-02  -1.09080000e+00   8.90829000e+01]
+ [ -1.40000000e-03  -1.17640000e+00   9.89000000e-02   9.76350000e+01]
+ [  0.00000000e+00   0.00000000e+00   0.00000000e+00   1.00000000e+00]]
+H0351.2002
+[ 124.  208.  131.]
+(285,)
+[ 122.  195.   99.]
+(285,)
+[ 123.  195.   99.]
+(285,)
+[ 122.  196.  105.]
+(285,)
+extractexplevel img1:  H0351.1015   4
+[ 125.  203.  116.]
+(285,)
+extractexplevel img1:  H0351.1012   1
+[ 120.  203.  105.]
+(285,)
+[ 124.  202.  113.]
+(285,)
+[ 124.  202.  122.]
+(285,)
+extractexplevel img1:  H0351.1016   3
+extractexplevel img1:  H0351.2001   0
+[ 123.  193.  109.]
+(285,)
+extractexplevel img1:  H0351.1009   1
+[ 122.  204.  103.]
+(285,)
+[ 118.  205.  116.]
+(285,)
+[ 121.  204.  106.]
+(285,)
+extractexplevel img1:  H0351.2002   3
+[ 102.  208.  126.]
+(285,)
+[  93.  208.  122.]
+(285,)
+[ 124.  208.  131.]
+(285,)
+[ 107.  209.  140.]
+(285,)
+[ 124.  208.   96.]
+(285,)
+[ 120.  208.  106.]
+(285,)
+extractexplevel img1:  H0351.1015   6
+[ 105.  204.  133.]
+(285,)
+[  96.  203.  119.]
+(285,)
+extractexplevel img1:  H0351.1012   2
+extractexplevel img1:  H0351.1016   0
+[  94.  207.  109.]
+(285,)
+[ 126.  213.  120.]
+(285,)
+extractexplevel img1:  H0351.2001   2
+extractexplevel img1:  H0351.1009   0
+[ 113.  212.  118.]
+(285,)
+[ 119.  212.   98.]
+(285,)
+[ 118.  212.   98.]
+(285,)
+[ 122.  204.  103.]
+(285,)
+[ 113.  212.  103.]
+(285,)
+[ 112.  212.  103.]
+(285,)
+[ 123.  215.  114.]
+(285,)
+[ 107.  214.  124.]
+(285,)
+extractexplevel img1:  H0351.2002   8
+  12   img1   img1
+['H0351.1015', 'H0351.1015', 'H0351.1015', 'H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.1016', 'H0351.1016', 'H0351.1009', 'H0351.2002', 'H0351.2002', 'H0351.2002', 'H0351.1015', 'H0351.1015', 'H0351.1015', 'H0351.1015', 'H0351.1015', 'H0351.1015', 'H0351.1012', 'H0351.1012', 'H0351.2001', 'H0351.2001', 'H0351.2002', 'H0351.2002', 'H0351.2002', 'H0351.2002', 'H0351.2002', 'H0351.2002', 'H0351.2002', 'H0351.2002']
+['img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img1', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2', 'img2']
+some variables  30  ,  12  ,  18  ,  30
+number of specimens  5  name:  6
+race
+['Hispanic', 'Hispanic', 'Hispanic', 'Hispanic', 'White or Caucasian', 'White or Caucasian', 'White or Caucasian', 'White or Caucasian', 'White or Caucasian', 'Black or African American', 'Black or African American', 'Black or African American', 'Hispanic', 'Hispanic', 'Hispanic', 'Hispanic', 'Hispanic', 'Hispanic', 'White or Caucasian', 'White or Caucasian', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American', 'Black or African American']
+age
+[49.0, 49.0, 49.0, 49.0, 31.0, 55.0, 55.0, 55.0, 57.0, 39.0, 39.0, 39.0, 49.0, 49.0, 49.0, 49.0, 49.0, 49.0, 31.0, 31.0, 24.0, 24.0, 39.0, 39.0, 39.0, 39.0, 39.0, 39.0, 39.0, 39.0]
+3
+30   285   25
+30   25
+combined_zscores shape  (30, 25)   (6, 25)   (24, 25)
+['ADRA2A', 'AVPR1B', 'CHRM2', 'CNR1', 'CREB1', 'CRH', 'CRHR1', 'CRHR2', 'GAD2', 'HTR1A', 'HTR1B', 'HTR1D', 'HTR2A', 'HTR3A', 'HTR5A', 'MAOA', 'PDE1A', 'SLC6A2', 'SLC6A4', 'SST', 'TAC1', 'TPH1', 'GPR50', 'CUX2', 'TPH2']
+25
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1 0.0632 0.06322   0.722  0.404
+Specimen     5 0.4745 0.09491   1.084  0.395
+Residuals   23 2.0130 0.08752               
+
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Area         1  0.920  0.9202   2.941 0.0998 .
+Specimen     5  3.404  0.6807   2.175 0.0922 .
+Residuals   23  7.197  0.3129                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1 0.0018 0.00180   0.042  0.839
+Specimen     5 0.2513 0.05025   1.181  0.349
+Residuals   23 0.9785 0.04254               
+
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Area         1 0.3473  0.3473   6.815 0.0156 *
+Specimen     5 0.3735  0.0747   1.466 0.2392  
+Residuals   23 1.1720  0.0510                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value  Pr(>F)   
+Area         1  0.092  0.0921   0.573 0.45694   
+Specimen     5  3.176  0.6352   3.947 0.00991 **
+Residuals   23  3.702  0.1609                   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value   Pr(>F)    
+Area         1 0.0062 0.00625   0.385 0.540859    
+Specimen     5 0.5152 0.10305   6.357 0.000762 ***
+Residuals   23 0.3728 0.01621                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value  Pr(>F)   
+Area         1  0.111  0.1108   0.993 0.32942   
+Specimen     5  3.335  0.6670   5.977 0.00111 **
+Residuals   23  2.566  0.1116                   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1  0.000 0.00006   0.000  0.983
+Specimen     5  1.121 0.22410   1.529  0.220
+Residuals   23  3.371 0.14656               
+
+            Df Sum Sq Mean Sq F value  Pr(>F)   
+Area         1 0.0348 0.03479   1.645 0.21246   
+Specimen     5 0.5355 0.10710   5.063 0.00283 **
+Residuals   23 0.4865 0.02115                   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Area         1 0.0245  0.0245   0.226 0.6390  
+Specimen     5 2.1093  0.4219   3.900 0.0105 *
+Residuals   23 2.4881  0.1082                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1  0.076 0.07562   0.355  0.557
+Specimen     5  1.571 0.31423   1.476  0.236
+Residuals   23  4.897 0.21289               
+
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Area         1 0.0020 0.00196   0.043 0.8371  
+Specimen     5 0.5852 0.11704   2.586 0.0536 .
+Residuals   23 1.0409 0.04526                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df  Sum Sq  Mean Sq F value Pr(>F)  
+Area         1 0.00069 0.000694   0.076  0.785  
+Specimen     5 0.10189 0.020378   2.237  0.085 .
+Residuals   23 0.20951 0.009109                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1 0.1898  0.1898   1.524  0.230
+Specimen     5 1.0237  0.2047   1.644  0.188
+Residuals   23 2.8652  0.1246               
+
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Area         1 0.0079 0.00791   0.162 0.6909  
+Specimen     5 0.5846 0.11692   2.397 0.0688 .
+Residuals   23 1.1221 0.04878                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value  Pr(>F)    
+Area         1 0.8645  0.8645  22.924 7.9e-05 ***
+Specimen     5 0.5014  0.1003   2.659  0.0488 *  
+Residuals   23 0.8674  0.0377                    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1 0.0263 0.02626   0.488  0.492
+Specimen     5 0.4333 0.08665   1.609  0.197
+Residuals   23 1.2388 0.05386               
+
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Area         1 0.0017 0.00169   0.043 0.8383  
+Specimen     5 0.7693 0.15385   3.880 0.0107 *
+Residuals   23 0.9119 0.03965                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value   Pr(>F)    
+Area         1 0.0021 0.00205   0.141 0.710995    
+Specimen     5 0.4914 0.09828   6.744 0.000528 ***
+Residuals   23 0.3352 0.01457                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value   Pr(>F)    
+Area         1 0.1497 0.14973  14.864 0.000805 ***
+Specimen     5 0.1835 0.03670   3.644 0.014216 *  
+Residuals   23 0.2317 0.01007                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value   Pr(>F)    
+Area         1 0.2793 0.27933  42.794 1.13e-06 ***
+Specimen     5 0.1825 0.03651   5.593  0.00163 ** 
+Residuals   23 0.1501 0.00653                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1  0.004 0.00354   0.013  0.911
+Specimen     5  0.466 0.09313   0.338  0.885
+Residuals   23  6.336 0.27549               
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1   1.89   1.887   0.722  0.404
+Specimen     5   7.48   1.495   0.572  0.721
+Residuals   23  60.14   2.615               
+
+            Df Sum Sq Mean Sq F value Pr(>F)
+Area         1 0.0751  0.0751   0.970  0.335
+Specimen     5 0.5142  0.1028   1.329  0.287
+Residuals   23 1.7802  0.0774               
+
+            Df Sum Sq Mean Sq F value  Pr(>F)   
+Area         1 0.0241 0.02415   0.383 0.54190   
+Specimen     5 1.2452 0.24905   3.954 0.00983 **
+Residuals   23 1.4488 0.06299                   
+---

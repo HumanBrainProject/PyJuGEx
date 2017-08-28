@@ -336,37 +336,6 @@ class Analysis:
                 area2_specimen = area2_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
                 area2_area = area2_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
                 combined_zscores = combined_zscores + self.main_r[i]['zscores'][:]
-        '''
-        if(np.equal(np.array(area1_zscores).all(), np.array(area1_zscoresD).all())):
-            print('they are equal')
-        if(np.equal(np.array(area2_zscores).all(), np.array(area2_zscoresD).all())):
-            print('they are equal')
-
-        if(np.equal(np.array(area1_specimen), np.array(area1_specimenD))):
-            print('they are equal')
-        if(np.equal(np.array(area2_specimen), np.array(area2_specimenD))):
-            print('they are equal')
-        print(area1_specimen)
-        print(area1_specimenD)
-        print(area2_specimen)
-        print(area2_specimenD)
-        print(area1_area)
-        print(area1_areaD)
-        print(area2_area)
-        print(area2_areaD)
-        if(np.equal(np.array(area1_area), np.array(area1_areaD))):
-            print('they are equal')
-        if(np.equal(np.array(area2_area), np.array(area2_areaD))):
-            print('they are equal')
-
-        if(np.equal(np.array(combined_zscores).all(), np.array(combined_zscoresD).all())):
-            print('they are equal')
-        if(np.equal(np.array(combined_zscores).all(), np.array(combined_zscoresD).all())):
-            print('they are equal')
-        '''
-
-        factor_specimen = []
-        factor_area = []
         factor_age = []
         factor_race = []
         factor_gender = []
@@ -383,14 +352,25 @@ class Analysis:
         print("some variables ",n_samples," , ",n_samples_area1," , ",n_samples_area2, " , ", len(factor_specimen))
         specimenFactors = readSpecimenFactors()
         print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
+
+        st = set(specimenFactors['name'])
+        for ind, a in enumerate(factor_specimen):
+            info_index = 0
+            if a in st:
+                info_index = specimenFactors['name'].index(a)
+            factor_age_numeric = factor_age_numeric + [specimenFactors['age'][info_index]]
+            factor_race = factor_race + [specimenFactors['race'][info_index]]
+        '''
         for counter in range(0, n_samples):
             info_index = 0
             for j in range(0, len(specimenFactors['name'])):
-                if(specimenFactors['name'][j] == factor_specimen[counter]): #CHECK THIS ENTRY
+                if specimenFactors['name'][j] == factor_specimen[counter]: #CHECK THIS ENTRY
                     info_index=j
                     break
+            print(info_index)
             factor_age_numeric.append(specimenFactors['age'][info_index])
             factor_race.append(specimenFactors['race'][info_index])
+        '''
         print('race')
         print(factor_race)
         print('age')
@@ -413,6 +393,9 @@ class Analysis:
                     geneIds.append(self.genelist['gene_symbol'][j])
                     break
         print(geneIds)
+#        if(np.equal(np.array(geneIds), np.array(geneIdsD))):
+#            print('they are equal')
+#        exit()
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
         print(n_genes)
         Reference_Anovan_p = np.zeros(n_genes)
