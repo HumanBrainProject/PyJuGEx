@@ -11,7 +11,7 @@ from rpy2.robjects.vectors import StrVector
 import urllib.request
 import scipy as sp
 import scipy.stats.mstats
-import itertools
+import xmltodict
 
 def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
     unique_entrez_id = np.unique(entrez_id)
@@ -101,6 +101,7 @@ def readSpecimenFactors():
 
 class Analysis:
     def __init__(self):
+        self.probeids = []
         self.donorids = ['15496','14380','15697','9861','12876','10021'] #HARDCODING DONORIDS
         self.genelist = None #Generate the empty dicts here"
         self.apidata = dict.fromkeys(['apiinfo', 'specimeninfo'])
@@ -108,6 +109,19 @@ class Analysis:
         self.main_r = []
         self.mapthreshold = 2
         self.result = None
+
+    def retrieveprobeids(self):
+        genesymbols = np.unique(np.array(self.genelist['gene_symbol']))
+        print(genesymbols)
+        for g in genesymbols:
+            url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
+            url += g
+            url += "],rma::options[only$eq'probes.id']"
+            print(url)
+            response = urllib.request.urlopen(url).read()
+            data = xmltodict.parse(response)
+            for d in data['Response']['probes']['probe']:
+                self.probeids = self.probeids + [d['id']]
 
     def readCachedApiSpecimenData(self, probeIds, rootdir):
         self.apidata['specimenInfo'] = []
@@ -200,6 +214,7 @@ class Analysis:
         print('In retrieve_gene_data')
         self.genelist = genelist
         print(len(genelist))
+        self.retrieveprobeids()
 
     def queryapi(self, donorId, probeIds):
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
@@ -292,8 +307,10 @@ class Analysis:
        print('In downlaod_and_retrieve_gene_data')
        self.genelist = genelist
        print(len(genelist))
+       self.retrieveprobeids()
        rootDir = os.path.dirname('AllenBrainApi/')
-       self.getapidata(self.genelist['probe_id'])
+
+       self.getapidata(self.probeids)
 
     def set_candidate_genes(self, genelist, cache, refresh_cache):
         self.genelist = genelist
