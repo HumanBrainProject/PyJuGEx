@@ -177,10 +177,6 @@ class Analysis:
         T = np.dot(invimgMni, Mni)
         coords = transformSamples(apidataind['samples'], T)
         coords = np.rint(coords)
-        '''
-        for i in range(0, len(coords)):
-            coords[i] = np.rint(coords[i])
-        '''
         for i in range(0, len(coords)):
             coord = coords[i]
             sum = (coord > 0).sum()
@@ -311,19 +307,12 @@ class Analysis:
     def performAnova(self):
         r = robjects.r
         area1_zscores = []
-        area1_zscoresD = []
         area2_zscores = []
-        area2_zscoresD = []
         area1_specimen = []
-        area1_specimenD = []
         area2_specimen = []
-        area2_specimenD = []
         area1_area = []
-        area1_areaD = []
         area2_area = []
-        area2_areaD = []
         combined_zscores = []
-        combined_zscoresD = []
         print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
         for i in range(0, len(self.main_r)):
             if self.main_r[i]['name'] == 'img1':
@@ -360,17 +349,6 @@ class Analysis:
                 info_index = specimenFactors['name'].index(a)
             factor_age_numeric = factor_age_numeric + [specimenFactors['age'][info_index]]
             factor_race = factor_race + [specimenFactors['race'][info_index]]
-        '''
-        for counter in range(0, n_samples):
-            info_index = 0
-            for j in range(0, len(specimenFactors['name'])):
-                if specimenFactors['name'][j] == factor_specimen[counter]: #CHECK THIS ENTRY
-                    info_index=j
-                    break
-            print(info_index)
-            factor_age_numeric.append(specimenFactors['age'][info_index])
-            factor_race.append(specimenFactors['race'][info_index])
-        '''
         print('race')
         print(factor_race)
         print('age')
@@ -386,13 +364,6 @@ class Analysis:
         print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
         geneIds = []
-        '''
-        for i in range(0, len(uniqueId)):
-            for j in range(0, len(self.genelist['entrez_id'])):
-                if(self.genelist['entrez_id'][j] == uniqueId[i]):
-                    geneIds.append(self.genelist['gene_symbol'][j])
-                    break
-        '''
         st = set(self.genelist['entrez_id'])
         for ind, a in enumerate(uniqueId):
             index = 0
@@ -425,21 +396,11 @@ class Analysis:
             ss_between_group_area = summary[0][1][0] #tab{2,2}
             Reference_Anovan_eta2[i] = ss_between_group_area/ss_total
             var1 = []
-            var1d = []
-            var2d = []
             var2 = []
             row = combined_zscores[:,i]
-            var1d = var1d + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img1']
-            var2d = var2d + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img2']
-            for j in range(0, len(row)):
-                if factor_area[j] == 'img1':
-                    var1.append(combined_zscores[j][i])
-                if factor_area[j] == 'img2':
-                    var2.append(combined_zscores[j][i])
-            if(np.equal(np.array(var1d).all(), np.array(var1).all())):
-                print('same')
-            if(np.equal(np.array(var2d).all(), np.array(var2).all())):
-                print('same')
+            var1 = var1 + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img1']
+            var2 = var2 + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img2']
+
             mse = (np.var(var1, ddof=1) + np.var(var2, ddof=1))*0.5
             sm1m2 = 2.011*sqrt((2*mse)/n_genes)
             mean1 = np.mean(var1)
@@ -454,8 +415,7 @@ class Analysis:
         FWE_corrected_p = np.zeros(n_genes)
         F_mat_perm_anovan = np.zeros((n_rep, n_genes))
         p_mat_perm_anovan = np.zeros((n_rep, n_genes))
-        for i in range(0, n_genes):
-            F_mat_perm_anovan[0][i] = F_vec_ref_anovan[i]
+        F_mat_perm_anovan[0] = F_vec_ref_anovan
         for rep in range(1, n_rep):
             F_vec_perm_anovan = np.zeros(n_genes)
             p_vec_perm_anovan = np.zeros(n_genes)
@@ -472,32 +432,22 @@ class Analysis:
                 a = r['aov'](f, data = dataf)
                 summary = r['summary'](a)
                 F_vec_perm_anovan[j] = summary[0][3][0]
-                p_vec_perm_anovan[j] = summary[0][4][0]
-                F_mat_perm_anovan[rep][j] = F_vec_perm_anovan[j]
-                p_mat_perm_anovan[rep][j] = p_vec_perm_anovan[j]
+                p_vec_perm_anovan[j] = summary[0][4][0]                
+            F_mat_perm_anovan[rep] = F_vec_perm_anovan
+            p_mat_perm_anovan[rep] = p_vec_perm_anovan
+
         ref = F_mat_perm_anovan.max(1)
         Uncorrected_permuted_p = np.zeros(n_genes)
-        for j in range(0, n_genes):
-            sum = 0
-            for k in range(0, n_rep):
-                if(F_mat_perm_anovan[k][j] >= F_vec_ref_anovan[j]):
-                    sum = sum+1
-            Uncorrected_permuted_p[j] = sum/n_rep
-            v = []
-            for k in range(0, n_rep):
-                if(ref[k] >= F_vec_ref_anovan[j]):
-                    v.append(1)
-                else:
-                    v.append(0)
-            FWE_corrected_p[j] = np.mean(v)
-        print('FWE_corrected_p is', FWE_corrected_p)
 
-        self.result = {}
         for j in range(0, n_genes):
-            print(j,' ',geneIds[j],' ',uniqueId[j],' ',FWE_corrected_p[j])
-            self.result[uniqueId[j]] = FWE_corrected_p[j]
-        print(self.result.items())
+            val = F_vec_ref_anovan[j]
+            list1 = F_mat_perm_anovan[:,j]
+            sum = len([1 for a in list1 if a >= val])
+            Uncorrected_permuted_p[j] = sum/n_rep
+            sum = len([1 for a in ref if a >= val])
+            FWE_corrected_p[j] = sum/n_rep
+        self.result = dict(zip(geneIds, FWE_corrected_p))
+        print(self.result)
 
     def pvalues(self):
-        print(self.result.keys())
         return self.result;
