@@ -123,7 +123,7 @@ class Analysis:
             for d in data['Response']['probes']['probe']:
                 self.probeids = self.probeids + [d['id']]
 
-    def readCachedApiSpecimenData(self, probeIds, rootdir):
+    def readCachedApiSpecimenData(self, rootdir):
         self.apidata['specimenInfo'] = []
         self.apidata['apiinfo'] = []
         for d in self.donorids:
@@ -216,9 +216,9 @@ class Analysis:
         print(len(genelist))
         self.retrieveprobeids()
 
-    def queryapi(self, donorId, probeIds):
+    def queryapi(self, donorId):
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        for p in probeIds:
+        for p in self.probeids:
             url += p
             url += ","
         url = url[:-1]
@@ -296,10 +296,10 @@ class Analysis:
             self.apidata['specimenInfo'].append(res)
         print(len(self.apidata['specimenInfo']))
 
-    def getapidata(self, probeIds):
+    def getapidata(self):
         self.apidata['apiinfo'] = []
         for i in range(0, len(self.donorids)):
-            self.apidata['apiinfo'].append(self.queryapi(self.donorids[i], probeIds))
+            self.apidata['apiinfo'].append(self.queryapi(self.donorids[i]))
 
     def download_and_retrieve_gene_data(self, genelist, cache):
        self.downloadspecimens()
@@ -310,13 +310,13 @@ class Analysis:
        self.retrieveprobeids()
        rootDir = os.path.dirname('AllenBrainApi/')
 
-       self.getapidata(self.probeids)
+       self.getapidata()
 
     def set_candidate_genes(self, genelist, cache, refresh_cache):
         self.genelist = genelist
         print(len(genelist['entrez_id']))
         if refresh_cache is False:
-            self.readCachedApiSpecimenData(genelist['probe_id'], os.path.dirname(cache))
+            self.readCachedApiSpecimenData(os.path.dirname(cache))
 
     def run(self):
         self.performAnova()
