@@ -15,7 +15,10 @@ import xmltodict
 
 def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
     unique_entrez_id = np.unique(entrez_id)
+    print(entrez_id)
+    print(unique_entrez_id)
     indices = [np.where(np.in1d(entrez_id, x))[0] for x in unique_entrez_id]
+    print(indices)
     winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_entrez_id)))
     print(len(combined_zscores),' ',len(combined_zscores[0]),' ',len(indices))
     tmp = [[] for _ in range(len(combined_zscores))]
@@ -31,11 +34,31 @@ def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
     res['area2_zscores'] = winsorzed_mean_zscores[area1len:]
     return res
 
+def switch2genesymbol(gene_symbols, combined_zscores, area1len, area2len):
+    unique_gene_symbols = np.unique(gene_symbols)
+    indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
+    print(indices)
+    winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_gene_symbols)))
+    print(len(combined_zscores),' ',len(combined_zscores[0]),' ',len(indices))
+    tmp = [[] for _ in range(len(combined_zscores))]
+    for i in range (0, len(unique_gene_symbols)):
+        for j in range(0, len(combined_zscores)):
+            tmp[j] = [combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))]
+            winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1)) #maybe add a special case for one element in tmp
+    print(len(winsorzed_mean_zscores),' ',len(winsorzed_mean_zscores[0]))
+    res = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
+    res['uniqueId'] = unique_gene_symbols
+    res['combined_zscores'] = winsorzed_mean_zscores
+    res['area1_zscores'] = winsorzed_mean_zscores[0:area1len]
+    res['area2_zscores'] = winsorzed_mean_zscores[area1len:]
+    return res
+
 def getSpecimenData(info):
     specimenD = dict()
     specimenD['name'] = info['name']
     x = info['alignment3d']
-    specimenD['alignment3d'] = np.array([[x['tvr_00'], x['tvr_01'], x['tvr_02'], x['tvr_09']],
+    specimenD['alignment3d'] = np.array([
+    [x['tvr_00'], x['tvr_01'], x['tvr_02'], x['tvr_09']],
     [x['tvr_03'], x['tvr_04'], x['tvr_05'], x['tvr_10']],
     [x['tvr_06'], x['tvr_07'], x['tvr_08'], x['tvr_11']],
     [0, 0, 0, 1]])
@@ -100,8 +123,15 @@ def readSpecimenFactors():
     return specimenFactors;
 
 class Analysis:
-    def __init__(self):
+    def __init__(self, gene_cache):
+        self.refreshcache = False
+        if not gene_cache:
+            self.refreshcache = True
+        self.cache = gene_cache
         self.probeids = []
+        self.probeidsD = dict.fromkeys(['gene_symbols', 'probe_ids'])
+        self.probeidsD['gene_symbols'] = []
+        self.probeidsD['probe_ids'] = []
         self.donorids = ['15496','14380','15697','9861','12876','10021'] #HARDCODING DONORIDS
         self.genelist = None #Generate the empty dicts here"
         self.apidata = dict.fromkeys(['apiinfo', 'specimeninfo'])
@@ -111,7 +141,7 @@ class Analysis:
         self.result = None
 
     def retrieveprobeids(self):
-        genesymbols = np.unique(np.array(self.genelist['gene_symbol']))
+        genesymbols = np.unique(np.array(self.genelist['gene_symbols']))
         print(genesymbols)
         for g in genesymbols:
             url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
@@ -121,6 +151,8 @@ class Analysis:
             response = urllib.request.urlopen(url).read()
             data = xmltodict.parse(response)
             for d in data['Response']['probes']['probe']:
+                self.probeidsD['gene_symbols'] = self.probeidsD['gene_symbols'] + [g]
+                self.probeidsD['probe_ids'] = self.probeidsD['probe_ids'] + [d['id']]
                 self.probeids = self.probeids + [d['id']]
 
     def readCachedApiSpecimenData(self, rootdir):
@@ -161,7 +193,7 @@ class Analysis:
             print(s['alignment3d'])
             print(s['name'])
 
-    def set_coordinates_region(self, voi, index):
+    def set_ROI_MNI152(self, voi, index):
         for i in range(0, len(self.apidata['specimenInfo'])):
             revisedApiDataCombo = dict()
             revisedApiData = self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i]) #Maybe an index will work instead of expressionspmcorrelation
@@ -210,7 +242,7 @@ class Analysis:
             print(revisedApiData['zscores'][i].shape)
         return revisedApiData
 
-    def retrieve_gene_data(self, genelist, cache):
+    def retrieve_gene_data(self, genelist):
         print('In retrieve_gene_data')
         self.genelist = genelist
         print(len(genelist))
@@ -285,7 +317,7 @@ class Analysis:
         self.apidata['specimenInfo'] = []
         for i in range(0, len(specimens)):
             url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"
-            url+="'"
+            url+= "'"
             url += specimens[i]
             url += "']&include=alignment3d"
             print(url)
@@ -301,22 +333,21 @@ class Analysis:
         for i in range(0, len(self.donorids)):
             self.apidata['apiinfo'].append(self.queryapi(self.donorids[i]))
 
-    def download_and_retrieve_gene_data(self, genelist, cache):
+    def download_and_retrieve_gene_data(self):
        self.downloadspecimens()
        self.apidata['apiinfo'] = []
        print('In downlaod_and_retrieve_gene_data')
-       self.genelist = genelist
-       print(len(genelist))
-       self.retrieveprobeids()
        rootDir = os.path.dirname('AllenBrainApi/')
-
        self.getapidata()
 
-    def set_candidate_genes(self, genelist, cache, refresh_cache):
+    def set_candidate_genes(self, genelist):
         self.genelist = genelist
-        print(len(genelist['entrez_id']))
-        if refresh_cache is False:
-            self.readCachedApiSpecimenData(os.path.dirname(cache))
+        print(len(genelist))
+        self.retrieveprobeids()
+        if self.refreshcache is False:
+            self.readCachedApiSpecimenData(os.path.dirname(self.cache))
+        else:
+            self.download_and_retrieve_gene_data()
 
     def run(self):
         self.performAnova()
@@ -371,7 +402,18 @@ class Analysis:
         print('age')
         print(factor_age_numeric)
         print(len(self.genelist))
+        allProbeData = switch2genesymbol(self.genelist['gene_symbols'], combined_zscores, len(area1_zscores), len(area2_zscores))
+        '''
         allProbeData = switch2gensymbol(self.genelist['entrez_id'], combined_zscores, len(area1_zscores), len(area2_zscores))
+        allProbeDataD = switch2genesymbol(self.genelist['gene_symbols'], combined_zscores, len(area1_zscores), len(area2_zscores))
+        if np.equal(np.array(allProbeData['combined_zscores']).all(), np.array(allProbeDataD['combined_zscores']).all()):
+            print('samecz')
+        if np.equal(np.array(allProbeData['area1_zscores']).all(), np.array(allProbeDataD['area1_zscores']).all()):
+            print('samearea1')
+        if np.equal(np.array(allProbeData['area2_zscores']).all(), np.array(allProbeDataD['area2_zscores']).all()):
+            print('samearea2')
+        exit()
+        '''
         combined_zscores = np.zeros((len(allProbeData['combined_zscores']), len(allProbeData['combined_zscores'])))
         combined_zscores = np.copy(allProbeData['combined_zscores'])
         area1_zscores = np.zeros((len(allProbeData['area1_zscores']), len(allProbeData['area1_zscores'])))
@@ -381,12 +423,12 @@ class Analysis:
         print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
         geneIds = []
-        st = set(self.genelist['entrez_id'])
+        st = set(self.genelist['gene_symbols'])
         for ind, a in enumerate(uniqueId):
             index = 0
             if a in st:
-                index = self.genelist['entrez_id'].index(a)
-            geneIds = geneIds + [self.genelist['gene_symbol'][index]]
+                index = self.genelist['gene_symbols'].index(a)
+            geneIds = geneIds + [self.genelist['gene_symbols'][index]]
 
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
         print(n_genes)
