@@ -4,8 +4,8 @@ import urllib.request
 import json
 import csv
 
-def DifferentialGeneExpression():
-    analysisjugex = mymodule.Analysis()
+def DifferentialGeneExpression(gene_cache):
+    analysisjugex = mymodule.Analysis(gene_cache)
     return analysisjugex
 
 def readCSVFile(filename):

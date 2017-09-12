@@ -12,10 +12,12 @@ import urllib.request
 import scipy as sp
 import scipy.stats.mstats
 import xmltodict
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
 
 def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
     unique_entrez_id = np.unique(entrez_id)
-    print(entrez_id)
+    print('length of entrez id is ',len(entrez_id))
     print(unique_entrez_id)
     indices = [np.where(np.in1d(entrez_id, x))[0] for x in unique_entrez_id]
     print(indices)
@@ -36,6 +38,9 @@ def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
 
 def switch2genesymbol(gene_symbols, combined_zscores, area1len, area2len):
     unique_gene_symbols = np.unique(gene_symbols)
+    print(len(gene_symbols))
+    print(len(unique_gene_symbols))
+    exit()
     indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
     print(indices)
     winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_gene_symbols)))
@@ -142,7 +147,6 @@ class Analysis:
 
     def retrieveprobeids(self):
         genesymbols = np.unique(np.array(self.genelist['gene_symbols']))
-        print(genesymbols)
         for g in genesymbols:
             url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
             url += g
@@ -402,18 +406,9 @@ class Analysis:
         print('age')
         print(factor_age_numeric)
         print(len(self.genelist))
-        allProbeData = switch2genesymbol(self.genelist['gene_symbols'], combined_zscores, len(area1_zscores), len(area2_zscores))
-        '''
+
         allProbeData = switch2gensymbol(self.genelist['entrez_id'], combined_zscores, len(area1_zscores), len(area2_zscores))
-        allProbeDataD = switch2genesymbol(self.genelist['gene_symbols'], combined_zscores, len(area1_zscores), len(area2_zscores))
-        if np.equal(np.array(allProbeData['combined_zscores']).all(), np.array(allProbeDataD['combined_zscores']).all()):
-            print('samecz')
-        if np.equal(np.array(allProbeData['area1_zscores']).all(), np.array(allProbeDataD['area1_zscores']).all()):
-            print('samearea1')
-        if np.equal(np.array(allProbeData['area2_zscores']).all(), np.array(allProbeDataD['area2_zscores']).all()):
-            print('samearea2')
-        exit()
-        '''
+
         combined_zscores = np.zeros((len(allProbeData['combined_zscores']), len(allProbeData['combined_zscores'])))
         combined_zscores = np.copy(allProbeData['combined_zscores'])
         area1_zscores = np.zeros((len(allProbeData['area1_zscores']), len(allProbeData['area1_zscores'])))
@@ -422,14 +417,22 @@ class Analysis:
         area2_zscores = np.copy(allProbeData['area2_zscores'])
         print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
+        '''
         geneIds = []
-        st = set(self.genelist['gene_symbols'])
+        st = set(self.probeidsD['gene_symbols'])
         for ind, a in enumerate(uniqueId):
             index = 0
             if a in st:
-                index = self.genelist['gene_symbols'].index(a)
-            geneIds = geneIds + [self.genelist['gene_symbols'][index]]
-
+                index = self.probeidsD['gene_symbols'].index(a)
+            geneIds = geneIds + [self.probeidsD['gene_symbols'][index]]
+        '''
+        geneIds = []
+        st = set(self.genelist['entrez_id'])
+        for ind, a in enumerate(uniqueId):
+            index = 0
+            if a in st:
+                index = self.genelist['entrez_id'].index(a)
+            geneIds = geneIds + [self.genelist['entrez_id'][index]]
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
         print(n_genes)
         Reference_Anovan_p = np.zeros(n_genes)
@@ -438,28 +441,26 @@ class Analysis:
         Reference_Anovan_CI_h = np.zeros(n_genes)
         Reference_Anovan_diff_mean = np.zeros(n_genes)
         F_vec_ref_anovan = np.zeros(n_genes)
+        data = {}
+        data['Area'] = factor_area
+        data['Specimen'] = factor_specimen
+        data['Age'] = factor_age_numeric
+        data['Race'] = factor_race
 
         for i in range(0, n_genes):
-            od = rlc.OrdDict([('Area', robjects.StrVector(factor_area)),
-                              ('Specimen', robjects.StrVector(factor_specimen)),
-                              ('Age', robjects.IntVector(factor_age_numeric)),
-                              ('Race', robjects.StrVector(factor_race)),
-                              ('Zscores', robjects.FloatVector(combined_zscores[:,i]))])
-            dataf = robjects.DataFrame(od)
-            f = robjects.Formula('Zscores~Area+Specimen+Age+Race')
-            a = r['aov'](f, data = dataf)
-            summary = r['summary'](a)
-            print(summary)
-            F_vec_ref_anovan[i] = summary[0][3][0] #tab{2,6}
-            ss_total = summary[0][1][0]+summary[0][1][1]+summary[0][1][2] #tab{7,2}
-            ss_between_group_area = summary[0][1][0] #tab{2,2}
+            data['Zscores'] = combined_zscores[:,i]
+            mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
+            aov_table = sm.stats.anova_lm(mod, typ=1)
+            print(aov_table)
+            F_vec_ref_anovan[i] = aov_table['F'][0]
+            ss_total = aov_table['sum_sq'][0]+aov_table['sum_sq'][1]+aov_table['sum_sq'][4]
+            ss_between_group_area =  aov_table['sum_sq'][0]
             Reference_Anovan_eta2[i] = ss_between_group_area/ss_total
             var1 = []
             var2 = []
             row = combined_zscores[:,i]
             var1 = var1 + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img1']
             var2 = var2 + [combined_zscores[j][i] for j in range(0, len(row)) if factor_area[j] == 'img2']
-
             mse = (np.var(var1, ddof=1) + np.var(var2, ddof=1))*0.5
             sm1m2 = 2.011*sqrt((2*mse)/n_genes)
             mean1 = np.mean(var1)
@@ -468,7 +469,7 @@ class Analysis:
             Reference_Anovan_CI_l[i] = v - sm1m2
             Reference_Anovan_CI_h[i] = v + sm1m2
             Reference_Anovan_diff_mean[i] = v
-            Reference_Anovan_p[i] = summary[0][4][0] #p(1)
+            Reference_Anovan_p[i] = aov_table['PR(>F)'][0] #p(1)
 
         n_rep = 1000
         FWE_corrected_p = np.zeros(n_genes)
@@ -480,18 +481,12 @@ class Analysis:
             p_vec_perm_anovan = np.zeros(n_genes)
             for j in range(0, n_genes):
                 shuffle = np.random.permutation(factor_area)
-                f = robjects.StrVector(shuffle)
-                od = rlc.OrdDict([('Area', f),
-                                  ('Specimen', robjects.StrVector(factor_specimen)),
-                                  ('Age', robjects.IntVector(factor_age_numeric)),
-                                  ('Race', robjects.StrVector(factor_race)),
-                                  ('Zscores', robjects.FloatVector(combined_zscores[:,j]))])
-                dataf = robjects.DataFrame(od)
-                f = robjects.Formula('Zscores~Area+Specimen+Age+Race')
-                a = r['aov'](f, data = dataf)
-                summary = r['summary'](a)
-                F_vec_perm_anovan[j] = summary[0][3][0]
-                p_vec_perm_anovan[j] = summary[0][4][0]                
+                data['Area'] = shuffle
+                data['Zscores'] = combined_zscores[:,j]
+                mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
+                aov_table = sm.stats.anova_lm(mod, typ=1)
+                F_vec_perm_anovan[j] = aov_table['F'][0]
+                p_vec_perm_anovan[j] = aov_table['PR(>F)'][0]
             F_mat_perm_anovan[rep] = F_vec_perm_anovan
             p_mat_perm_anovan[rep] = p_vec_perm_anovan
 
@@ -507,6 +502,7 @@ class Analysis:
             FWE_corrected_p[j] = sum/n_rep
         self.result = dict(zip(geneIds, FWE_corrected_p))
         print(self.result)
+
 
     def pvalues(self):
         return self.result;
