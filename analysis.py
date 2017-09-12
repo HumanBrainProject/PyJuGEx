@@ -208,8 +208,11 @@ class Analysis:
             revisedApiDataCombo['specimen'] = revisedApiData['specimen']
             if index == 0:
                 revisedApiDataCombo['name'] = 'img1'
-            else:
+            elif index == 1:
                 revisedApiDataCombo['name'] = 'img2'
+            else:
+                print('only 0 and 1 are valid choices')
+                exit()
             print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
             self.main_r.append(revisedApiDataCombo)
 
