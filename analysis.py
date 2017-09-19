@@ -14,33 +14,12 @@ import scipy.stats.mstats
 import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
-
-def switch2gensymbol(entrez_id, combined_zscores, area1len, area2len):
-    unique_entrez_id = np.unique(entrez_id)
-    print('length of entrez id is ',len(entrez_id))
-    print(unique_entrez_id)
-    indices = [np.where(np.in1d(entrez_id, x))[0] for x in unique_entrez_id]
-    print(indices)
-    winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_entrez_id)))
-    print(len(combined_zscores),' ',len(combined_zscores[0]),' ',len(indices))
-    tmp = [[] for _ in range(len(combined_zscores))]
-    for i in range (0, len(unique_entrez_id)):
-        for j in range(0, len(combined_zscores)):
-            tmp[j] = [combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))]
-            winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1)) #maybe add a special case for one element in tmp
-    print(len(winsorzed_mean_zscores),' ',len(winsorzed_mean_zscores[0]))
-    res = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
-    res['uniqueId'] = unique_entrez_id
-    res['combined_zscores'] = winsorzed_mean_zscores
-    res['area1_zscores'] = winsorzed_mean_zscores[0:area1len]
-    res['area2_zscores'] = winsorzed_mean_zscores[area1len:]
-    return res
+from scipy import stats
 
 def switch2genesymbol(gene_symbols, combined_zscores, area1len, area2len):
     unique_gene_symbols = np.unique(gene_symbols)
-    print(len(gene_symbols))
-    print(len(unique_gene_symbols))
-    exit()
+    print(gene_symbols)
+    print(unique_gene_symbols)
     indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
     print(indices)
     winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_gene_symbols)))
@@ -133,12 +112,16 @@ class Analysis:
         if not gene_cache:
             self.refreshcache = True
         self.cache = gene_cache
+        self.rootdir = './AllenBrainApi'
         self.probeids = []
+        self.genelist = []
+        self.genesymbols = []
         self.probeidsD = dict.fromkeys(['gene_symbols', 'probe_ids'])
         self.probeidsD['gene_symbols'] = []
         self.probeidsD['probe_ids'] = []
+
         self.donorids = ['15496','14380','15697','9861','12876','10021'] #HARDCODING DONORIDS
-        self.genelist = None #Generate the empty dicts here"
+        #self.genelist = None #Generate the empty dicts here"
         self.apidata = dict.fromkeys(['apiinfo', 'specimeninfo'])
         self.vois = []
         self.main_r = []
@@ -146,8 +129,8 @@ class Analysis:
         self.result = None
 
     def retrieveprobeids(self):
-        genesymbols = np.unique(np.array(self.genelist['gene_symbols']))
-        for g in genesymbols:
+        #genesymbols = np.unique(np.array(self.genelist['gene_symbols']))
+        for g in self.genelist:
             url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
             url += g
             url += "],rma::options[only$eq'probes.id']"
@@ -155,18 +138,23 @@ class Analysis:
             response = urllib.request.urlopen(url).read()
             data = xmltodict.parse(response)
             for d in data['Response']['probes']['probe']:
-                self.probeidsD['gene_symbols'] = self.probeidsD['gene_symbols'] + [g]
-                self.probeidsD['probe_ids'] = self.probeidsD['probe_ids'] + [d['id']]
+                #self.probeidsD['gene_symbols'] = self.probeidsD['gene_symbols'] + [g]
+                #self.probeidsD['probe_ids'] = self.probeidsD['probe_ids'] + [d['id']]
                 self.probeids = self.probeids + [d['id']]
+                #self.genelist = self.genelist + [g]
+                self.genesymbols = self.genesymbols + [g]
+        print(len(self.probeids))
 
-    def readCachedApiSpecimenData(self, rootdir):
+
+    def readCachedApiSpecimenData(self):
         self.apidata['specimenInfo'] = []
         self.apidata['apiinfo'] = []
+        #self.downloadspecimens()
         for d in self.donorids:
-            donorpath = os.path.join(rootdir, d)
-            fileNameM = os.path.join(donorpath, 'specimenInfoMat.txt')
+            donorpath = os.path.join(self.cache, d)
+            fileNameM = os.path.join(donorpath, 'specimenMat.txt')
             mat = np.loadtxt(fileNameM)
-            fileNameN = os.path.join(donorpath, 'specimenInfoName.txt')
+            fileNameN = os.path.join(donorpath, 'specimenName.txt')
             f = open(fileNameN, 'r')
             name = f.read()
             f.close()
@@ -193,9 +181,6 @@ class Analysis:
             apiDataC['zscores'] = zscoresC
             self.apidata['apiinfo'].append(apiDataC)
             print('inside readcachedata ',len(apiDataC['samples']), ' ', apiDataC['zscores'].shape, ' ', len(apiDataC['probes']))
-        for s in self.apidata['specimenInfo']:
-            print(s['alignment3d'])
-            print(s['name'])
 
     def set_ROI_MNI152(self, voi, index):
         for i in range(0, len(self.apidata['specimenInfo'])):
@@ -269,10 +254,9 @@ class Analysis:
         data = text['msg']
         samples = []
         probes = []
-        rootDir = os.path.dirname('AllenBrainApi/')
-        if not os.path.exists(rootDir):
-            os.makedirs(rootDir)
-        donorPath = os.path.join(rootDir, donorId)
+        if not os.path.exists(self.rootdir):
+            os.makedirs(self.rootdir)
+        donorPath = os.path.join(self.rootdir, donorId)
         if not os.path.exists(donorPath):
             os.makedirs(donorPath)
         nsamples = len(data['samples'])
@@ -317,6 +301,7 @@ class Analysis:
         apiData['samples'] = samples
         apiData['probes'] = probes
         apiData['zscores'] = zscores
+        print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
         return apiData
 
     def downloadspecimens(self):
@@ -333,7 +318,13 @@ class Analysis:
             data = text['msg'][0]
             res = getSpecimenData(data)
             self.apidata['specimenInfo'].append(res)
-        print(len(self.apidata['specimenInfo']))
+        print(self.apidata['specimenInfo'])
+        for i in range(0, len(self.donorids)):
+            factorPath = os.path.join(self.rootdir, self.donorids[i]+'/specimenName.txt')
+            with open(factorPath, 'w') as outfile:
+                outfile.write(self.apidata['specimenInfo'][i]['name'])
+            factorPath = os.path.join(self.rootdir, self.donorids[i]+'/specimenMat.txt')
+            np.savetxt(factorPath, self.apidata['specimenInfo'][i]['alignment3d'])
 
     def getapidata(self):
         self.apidata['apiinfo'] = []
@@ -341,18 +332,17 @@ class Analysis:
             self.apidata['apiinfo'].append(self.queryapi(self.donorids[i]))
 
     def download_and_retrieve_gene_data(self):
-       self.downloadspecimens()
        self.apidata['apiinfo'] = []
        print('In downlaod_and_retrieve_gene_data')
-       rootDir = os.path.dirname('AllenBrainApi/')
        self.getapidata()
+       self.downloadspecimens()
 
     def set_candidate_genes(self, genelist):
         self.genelist = genelist
         print(len(genelist))
         self.retrieveprobeids()
         if self.refreshcache is False:
-            self.readCachedApiSpecimenData(os.path.dirname(self.cache))
+            self.readCachedApiSpecimenData()
         else:
             self.download_and_retrieve_gene_data()
 
@@ -410,8 +400,9 @@ class Analysis:
         print(factor_age_numeric)
         print(len(self.genelist))
 
-        allProbeData = switch2gensymbol(self.genelist['entrez_id'], combined_zscores, len(area1_zscores), len(area2_zscores))
-
+        #allProbeData = switch2gensymbol(self.genelist['entrez_id'], combined_zscores, len(area1_zscores), len(area2_zscores))
+        #allProbeData = switch2genesymbol(self.genelist, combined_zscores, len(area1_zscores), len(area2_zscores))
+        allProbeData = switch2genesymbol(self.genesymbols, combined_zscores, len(area1_zscores), len(area2_zscores))
         combined_zscores = np.zeros((len(allProbeData['combined_zscores']), len(allProbeData['combined_zscores'])))
         combined_zscores = np.copy(allProbeData['combined_zscores'])
         area1_zscores = np.zeros((len(allProbeData['area1_zscores']), len(allProbeData['area1_zscores'])))
@@ -420,14 +411,16 @@ class Analysis:
         area2_zscores = np.copy(allProbeData['area2_zscores'])
         print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
-        '''
+
         geneIds = []
-        st = set(self.probeidsD['gene_symbols'])
+#        st = set(self.probeidsD['gene_symbols'])
+        #st = set(self.genelist)
+        st = set(self.genesymbols)
         for ind, a in enumerate(uniqueId):
             index = 0
             if a in st:
-                index = self.probeidsD['gene_symbols'].index(a)
-            geneIds = geneIds + [self.probeidsD['gene_symbols'][index]]
+                index = self.genesymbols.index(a)
+            geneIds = geneIds + [self.genesymbols[index]]
         '''
         geneIds = []
         st = set(self.genelist['entrez_id'])
@@ -436,6 +429,7 @@ class Analysis:
             if a in st:
                 index = self.genelist['entrez_id'].index(a)
             geneIds = geneIds + [self.genelist['entrez_id'][index]]
+        '''
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
         print(n_genes)
         Reference_Anovan_p = np.zeros(n_genes)
@@ -451,14 +445,26 @@ class Analysis:
         data['Race'] = factor_race
 
         for i in range(0, n_genes):
+            print(self.genesymbols[i])
             data['Zscores'] = combined_zscores[:,i]
             mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
             aov_table = sm.stats.anova_lm(mod, typ=1)
             print(aov_table)
+            '''
+            print('F_vec_ref_anovan: ',aov_table['F'][0])
+            print('aov_table[sum_sq][0]: ',aov_table['sum_sq'][0])
+            print('aov_table[sum_sq][1]: ',aov_table['sum_sq'][1])
+            print('aov_table[sum_sq][4]: ',aov_table['sum_sq'][4])
+            '''
             F_vec_ref_anovan[i] = aov_table['F'][0]
             ss_total = aov_table['sum_sq'][0]+aov_table['sum_sq'][1]+aov_table['sum_sq'][4]
             ss_between_group_area =  aov_table['sum_sq'][0]
             Reference_Anovan_eta2[i] = ss_between_group_area/ss_total
+            '''
+            print('ss_total: ',ss_total)
+            print('ss_between_group_area ',ss_between_group_area)
+            print('Reference_Anovan_eta2 ',Reference_Anovan_eta2)
+            '''
             var1 = []
             var2 = []
             row = combined_zscores[:,i]
