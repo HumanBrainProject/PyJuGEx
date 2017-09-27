@@ -10,9 +10,9 @@ parcels = {}
 parcels['l0'] = nib.load(pyjugex.ReadParcellations(dictionaryimages, 'FP1'))
 parcels['l1'] = nib.load(pyjugex.ReadParcellations(dictionaryimages, 'FP2'))
 
-analysis = pyjugex.DifferentialGeneExpression(gene_cache = '/home/hbhattacharya/.pyjugex/cache246/')
-#analysis = pyjugex.DifferentialGeneExpression(gene_cache = None)
-genelist = ['ADRA2A', 'AVPR1B', 'CHRM2', 'CNR1', 'CREB1', 'CRH', 'CRHR1', 'CRHR2', 'GAD2', 'HTR1A', 'HTR1B', 'HTR1D', 'HTR2A', 'HTR3A', 'HTR5A', 'MAOA', 'PDE1A', 'SLC6A2', 'SLC6A4', 'SST', 'TAC1', 'TPH1', 'GPR50', 'CUX2', 'TPH2']
+analysis = pyjugex.DifferentialGeneExpression(gene_cache = '/home/hbhattacharya/.pyjugex/cachenew/')
+#genelist = ['ADRA2A', 'AVPR1B', 'CHRM2', 'CNR1', 'CREB1', 'CRH', 'CRHR1', 'CRHR2', 'GAD2', 'HTR1A', 'HTR1B', 'HTR1D', 'HTR2A', 'HTR3A', 'HTR5A', 'MAOA', 'PDE1A', 'SLC6A2', 'SLC6A4', 'SST', 'TAC1', 'TPH1', 'GPR50', 'CUX2', 'TPH2']
+genelist = ['ADRA2A', 'AVPR1B', 'CHRM2', 'CNR1', 'GAD2']
 analysis.set_candidate_genes(genelist)
 analysis.set_ROI_MNI152(parcels['l0'], 0)
 analysis.set_ROI_MNI152(parcels['l1'], 1)

@@ -4,10 +4,6 @@ import numpy as np
 from numpy import *
 import json
 from numpy.linalg import inv
-import rpy2.robjects as robjects
-import rpy2.rlike.container as rlc
-import rpy2.robjects.packages as rpackages
-from rpy2.robjects.vectors import StrVector
 import urllib.request
 import scipy as sp
 import scipy.stats.mstats
@@ -15,6 +11,7 @@ import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from scipy import stats
+
 
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
@@ -62,7 +59,7 @@ def transformSamples(samples, T):
     coords = coords.transpose()
     return coords
 
-def buildSpecimenFactors():
+def buildSpecimenFactors(cache):
     """
     Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api
     and create a dict.
@@ -76,8 +73,7 @@ def buildSpecimenFactors():
     specimenFactors['age'] = []
     response = urllib.request.urlopen(url).read().decode('utf8')
     text = json.loads(response)
-    rootDir = os.path.dirname('./')
-    factorPath = os.path.join(rootDir, 'specimenFactors.txt')
+    factorPath = os.path.join(cache, 'specimenFactors.txt')
     with open(factorPath, 'w') as outfile:
         json.dump(text, outfile)
     res = text['msg']
@@ -87,9 +83,9 @@ def buildSpecimenFactors():
         specimenFactors['race'].append(res[i]['race_only'])
         specimenFactors['gender'].append(res[i]['sex'])
         specimenFactors['age'].append(res[i]['age']['days']/365)
-    return specimenFactors;
+    return specimenFactors
 
-def readSpecimenFactors():
+def readSpecimenFactors(cache):
     """
     Read various factors such as age, name, race, gender of the six specimens from disk.
     """
@@ -99,10 +95,9 @@ def readSpecimenFactors():
     specimenFactors['race'] = []
     specimenFactors['gender'] = []
     specimenFactors['age'] = []
-    rootDir = os.path.dirname('./')
-    fileName = os.path.join(rootDir, 'specimenFactors.txt')
+    fileName = os.path.join(cache, 'specimenFactors.txt')
     if not os.path.exists(fileName):
-        specimenFactors = buildSpecimenFactors()
+        specimenFactors = buildSpecimenFactors(cache)
     f = open(fileName, "r")
     content = json.load(f)
     f.close()
@@ -113,7 +108,7 @@ def readSpecimenFactors():
         specimenFactors['race'].append(res[i]['race_only'])
         specimenFactors['gender'].append(res[i]['sex'])
         specimenFactors['age'].append(res[i]['age']['days']/365)
-    return specimenFactors;
+    return specimenFactors
 
 class Analysis:
     def __init__(self, gene_cache):
@@ -132,24 +127,44 @@ class Analysis:
         result = dict for storing gene ids and associated p values.
         """
         self.refreshcache = False
-        if not gene_cache:
+        if not os.path.exists(gene_cache):
             self.refreshcache = True
         self.cache = gene_cache
         self.rootdir = './AllenBrainApi'
+
         self.probeids = []
         self.genelist = []
+        self.downloadgenelist = []
         self.genesymbols = []
-        self.donorids = ['15496','14380','15697','9861','12876','10021'] #HARDCODING DONORIDS
+        self.genecache = {}
+        self.donorids = ['15496', '14380', '15697', '9861', '12876', '10021'] #HARDCODING DONORIDS
         self.apidata = dict.fromkeys(['apiinfo', 'specimeninfo'])
+        self.apidata['specimenInfo'] = []
+        self.apidata['apiinfo'] = []
         self.vois = []
         self.main_r = []
         self.mapthreshold = 2
         self.result = None
 
+    def creategenecache(self):
+        donorpath = os.path.join(self.cache, self.donorids[0])
+        filename = os.path.join(donorpath, 'probes.txt')
+        f = open(filename, "r")
+        probes = json.load(f)
+        for p in probes:
+            self.genecache.update({p['gene-symbol'] : None})
+        print(self.genecache)
+        for k, v in self.genecache.items():
+            if k in self.genelist:
+                self.downloadgenelist.remove(k)
+        print(self.downloadgenelist)
+
+
     def retrieveprobeids(self):
         """
         Retrieve probe ids for the given gene lists
         """
+        print('genelist ',self.genelist)
         for g in self.genelist:
             url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
             url += g
@@ -158,17 +173,16 @@ class Analysis:
             response = urllib.request.urlopen(url).read()
             data = xmltodict.parse(response)
             for d in data['Response']['probes']['probe']:
-                self.probeids = self.probeids + [d['id']]
+                if g in self.downloadgenelist:
+                    self.probeids = self.probeids + [d['id']]
                 self.genesymbols = self.genesymbols + [g]
-        print(len(self.probeids))
-
+        print('probeids: ',self.probeids)
+        print('genesymbols: ',self.genesymbols)
 
     def readCachedApiSpecimenData(self):
         """
         Read cached Allen Brain Api data from disk location
         """
-        self.apidata['specimenInfo'] = []
-        self.apidata['apiinfo'] = []
         #self.downloadspecimens()
         for d in self.donorids:
             donorpath = os.path.join(self.cache, d)
@@ -224,43 +238,7 @@ class Analysis:
             print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
             self.main_r.append(revisedApiDataCombo)
 
-    def expressionSpmCorrelation(self, img, apidataind, specimen):
-        """
-        Create internal data structures with valid coordinates in MNI152 space corresponding to the regions of interest
-        """
-        revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen'])
-        revisedApiData['zscores'] = []
-        revisedApiData['coords'] = []
-        revisedApiData['samples'] = []
-        revisedApiData['probes'] = []
-        revisedApiData['specimen'] = []
-        dataImg = img.get_data()
-        imgMni = img.affine
-        invimgMni = inv(imgMni)
-        Mni = specimen['alignment3d']
-        T = np.dot(invimgMni, Mni)
-        coords = transformSamples(apidataind['samples'], T)
-        coords = np.rint(coords)
-        for i in range(0, len(coords)):
-            coord = coords[i]
-            sum = (coord > 0).sum()
-            if sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold/10 or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0:
-                coords[i] = [-1, -1, -1]
-        for i in range(0, len(coords)):
-            coord = coords[i]
-            sum = (coord > 0).sum()
-            if sum == 3:
-                revisedApiData['zscores'].append(apidataind['zscores'][i])
-                revisedApiData['coords'].append(coord)
-        revisedApiData['samples'] = apidataind['samples'][:]
-        revisedApiData['probes'] = apidataind['probes'][:]
-        revisedApiData['specimen'] = specimen['name']
-        return revisedApiData
 
-    def retrieve_gene_data(self, genelist):
-        print('In retrieve_gene_data')
-        self.genelist = genelist
-        self.retrieveprobeids()
 
     def queryapi(self, donorId):
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
@@ -276,9 +254,9 @@ class Analysis:
         data = text['msg']
         samples = []
         probes = []
-        if not os.path.exists(self.rootdir):
-            os.makedirs(self.rootdir)
-        donorPath = os.path.join(self.rootdir, donorId)
+        if not os.path.exists(self.cache):
+            os.makedirs(self.cache)
+        donorPath = os.path.join(self.cache, donorId)
         if not os.path.exists(donorPath):
             os.makedirs(donorPath)
         nsamples = len(data['samples'])
@@ -326,7 +304,136 @@ class Analysis:
         print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
         return apiData
 
+    def expressionSpmCorrelation(self, img, apidataind, specimen):
+        """
+        Create internal data structures with valid coordinates in MNI152 space corresponding to the regions of interest
+        """
+        revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen'])
+        revisedApiData['zscores'] = []
+        revisedApiData['coords'] = []
+        revisedApiData['samples'] = []
+        revisedApiData['probes'] = []
+        revisedApiData['specimen'] = []
+        dataImg = img.get_data()
+        imgMni = img.affine
+        invimgMni = inv(imgMni)
+        Mni = specimen['alignment3d']
+        T = np.dot(invimgMni, Mni)
+        coords = transformSamples(apidataind['samples'], T)
+        coords = np.rint(coords)
+        for i in range(0, len(coords)):
+            coord = coords[i]
+            sum = (coord > 0).sum()
+            if sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold/10 or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0:
+                coords[i] = [-1, -1, -1]
+        for i in range(0, len(coords)):
+            coord = coords[i]
+            sum = (coord > 0).sum()
+            if sum == 3:
+                revisedApiData['zscores'].append(apidataind['zscores'][i])
+                revisedApiData['coords'].append(coord)
+        revisedApiData['samples'] = apidataind['samples'][:]
+        revisedApiData['probes'] = apidataind['probes'][:]
+        revisedApiData['specimen'] = specimen['name']
+        return revisedApiData
+
+
+
+    def queryapipartial(self, donorId):
+        """
+        Query Allen Brain Api for the given set of genes
+        """
+        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        for p in self.probeids:
+            url += p
+            url += ","
+        url = url[:-1]
+        url += "][donors$eq"
+        url += donorId
+        url += "]"
+        print(url)
+        response = urllib.request.urlopen(url).read().decode('utf8')
+        text = json.loads(response)
+        data = text['msg']
+        samples = []
+        probes = []
+
+        if not os.path.exists(self.cache):
+            os.makedirs(self.cache)
+        donorpath = os.path.join(self.cache, donorId)
+        if not os.path.exists(donorpath):
+            os.makedirs(donorpath)
+        nsamples = len(data['samples'])
+        nprobes = len(data['probes'])
+        samples = data['samples']
+        probes = data['probes']
+
+        zscores = np.zeros((nsamples, nprobes))
+        for i in range(0, nprobes):
+            for j in range(0, nsamples):
+                zscores[j][i] = probes[i]['z-score'][j]
+
+        #LOAD PROBES
+        fileName = os.path.join(donorpath, 'probes.txt')
+        f = open(fileName, "r")
+        probesC = json.load(f)
+        f.close()
+        #LOAD ZSCORES
+        fileName = os.path.join(donorpath, 'zscores.txt')
+        zscoresC = np.loadtxt(fileName)
+
+        '''
+        mri1 = np.array([s['sample']['mri'] for s in samples])
+        mri2 = np.array([s['sample']['mri'] for s in samplesC])
+        if not np.equal(mri1.all(), mri2.all()):
+            print('mri1 and mri2 are different')
+        np.savetxt('mri1.txt', mri1)
+        np.savetxt('mri2.txt', mri2)
+        exit()
+        '''
+        '''
+        apiDataC = dict()
+        apiDataC['samples'] = samples
+        apiDataC['probes'] = probesC + probes
+        apiDataC['zscores'] = np.append(zscoresC, zscores, axis=1)
+        '''
+
+        fileName = os.path.join(donorpath, 'samples.txt')
+        with open(fileName, 'w') as outfile:
+            json.dump(samples, outfile)
+        probes = probesC + probes
+        fileName = os.path.join(donorpath, 'probes.txt')
+        with open(fileName, 'w') as outfile:
+            json.dump(probes, outfile)
+        zscores = np.append(zscoresC, zscores, axis=1)
+        filename = os.path.join(donorpath, 'zscores.txt')
+        np.savetxt(filename, zscores)
+
+        #return apiDataC
+
+        '''
+        if  not os.path.exists(filename):
+            np.savetxt(filename, zscores)
+        else:
+            zscoresE = np.loadtxt(filename)
+            print(zscoresE.shape)
+            zscoresE.append(zscores)
+            np.savetxt(filename, zscores)
+
+
+        apiData = dict()
+        apiData['samples'] = samples
+        apiData['probes'] = probes
+        apiData['zscores'] = zscores
+        print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)        
+        return apiData
+        '''
+
     def downloadspecimens(self):
+        """
+        Downlaod names and alignment matrix for each specimen/donor from Allen Brain Api and save them on disk as specimenName.txt
+        and specimenMat.txt respectively, load.
+        """
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
         self.apidata['specimenInfo'] = []
         for i in range(0, len(specimens)):
@@ -342,37 +449,53 @@ class Analysis:
             self.apidata['specimenInfo'].append(res)
         print(self.apidata['specimenInfo'])
         for i in range(0, len(self.donorids)):
-            factorPath = os.path.join(self.rootdir, self.donorids[i]+'/specimenName.txt')
+            factorPath = os.path.join(self.cache, self.donorids[i]+'/specimenName.txt')
             with open(factorPath, 'w') as outfile:
                 outfile.write(self.apidata['specimenInfo'][i]['name'])
-            factorPath = os.path.join(self.rootdir, self.donorids[i]+'/specimenMat.txt')
+            factorPath = os.path.join(self.cache, self.donorids[i]+'/specimenMat.txt')
             np.savetxt(factorPath, self.apidata['specimenInfo'][i]['alignment3d'])
 
     def getapidata(self):
+        """
+        Loop through the donors and call queryapi() and populate apidata
+        """
         self.apidata['apiinfo'] = []
         for i in range(0, len(self.donorids)):
             self.apidata['apiinfo'].append(self.queryapi(self.donorids[i]))
 
     def download_and_retrieve_gene_data(self):
-       self.apidata['apiinfo'] = []
-       print('In downlaod_and_retrieve_gene_data')
-       self.getapidata()
-       self.downloadspecimens()
+        """
+        Download data from Allen Brain Api for the given set of genes and specimen information
+        """
+        self.getapidata()
+        self.downloadspecimens()
 
     def set_candidate_genes(self, genelist):
-        self.genelist = genelist
-        print(len(genelist))
-        self.retrieveprobeids()
-        if self.refreshcache is False:
-            self.readCachedApiSpecimenData()
-        else:
+        """
+        Set list of genes and prepare to read/download data for them.
+        """
+        self.genelist = genelist        
+        self.downloadgenelist = self.genelist[:]
+        if not os.path.exists(self.cache):
+            print('self.cache does not exist')
+            self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
+        else:
+            self.creategenecache()
+            self.retrieveprobeids()
+            if self.downloadgenelist:
+                for i in range(0, len(self.donorids)):
+                    self.queryapipartial(self.donorids[i])
+            self.readCachedApiSpecimenData()
 
     def run(self):
         self.performAnova()
 
     def performAnova(self):
-        r = robjects.r
+        """
+        Perform one way anova on zscores as the dependent variable and specimen factors such as age, race, name and area
+        as independent variables
+        """
         area1_zscores = []
         area2_zscores = []
         area1_specimen = []
@@ -406,7 +529,7 @@ class Analysis:
         n_samples_area2 = len(area2_area)
 
         print("some variables ",n_samples," , ",n_samples_area1," , ",n_samples_area2, " , ", len(factor_specimen))
-        specimenFactors = readSpecimenFactors()
+        specimenFactors = readSpecimenFactors(self.cache)
         print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
 
         st = set(specimenFactors['name'])
