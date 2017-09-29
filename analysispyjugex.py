@@ -13,6 +13,7 @@ from statsmodels.formula.api import ols
 from scipy import stats
 
 
+
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
     Compute Winsorzed mean of zscores over all genes.
@@ -111,12 +112,12 @@ def readSpecimenFactors(cache):
     return specimenFactors
 
 class Analysis:
+
     def __init__(self, gene_cache):
         """
         Initialize the Analysis class with various internal variables -
         refreshcache = True if no cache location is given, false otherwise.
         cache = Disk location where data from Allen Brain API has been downloaded and stored.
-        rootdir = Folder location where data from Allen Brain API will be downloaded and stored.
         probeids = list of probe ids associated with the give list of genes.
         genelist = given list of genes
         genesymbols =
@@ -126,12 +127,6 @@ class Analysis:
         mapthreshold = Internal variable to select or reject a sample
         result = dict for storing gene ids and associated p values.
         """
-        self.refreshcache = False
-        if not os.path.exists(gene_cache):
-            self.refreshcache = True
-        self.cache = gene_cache
-        self.rootdir = './AllenBrainApi'
-
         self.probeids = []
         self.genelist = []
         self.downloadgenelist = []
@@ -145,6 +140,20 @@ class Analysis:
         self.main_r = []
         self.mapthreshold = 2
         self.result = None
+        self.cache = gene_cache
+        if not os.path.exists(gene_cache):
+            print(gene_cache,' does not exist. It will take some time ')
+        else:
+            self.creategenecache()
+            print(len(self.genecache),' genes exist in ', self.cache)
+
+    def DifferentialAnalysis(self, genelist, roi1, roi2):
+        self.set_candidate_genes(genelist)
+        self.set_ROI_MNI152(roi1, 0)
+        self.set_ROI_MNI152(roi2, 1)
+        self.run()
+        result = self.pvalues()
+        return result
 
     def creategenecache(self):
         donorpath = os.path.join(self.cache, self.donorids[0])
@@ -154,10 +163,6 @@ class Analysis:
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
         print(self.genecache)
-        for k, v in self.genecache.items():
-            if k in self.genelist:
-                self.downloadgenelist.remove(k)
-        print(self.downloadgenelist)
 
 
     def retrieveprobeids(self):
@@ -421,7 +426,7 @@ class Analysis:
         apiData['samples'] = samples
         apiData['probes'] = probes
         apiData['zscores'] = zscores
-        print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)        
+        print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
         return apiData
         '''
 
@@ -470,7 +475,7 @@ class Analysis:
         """
         Set list of genes and prepare to read/download data for them.
         """
-        self.genelist = genelist        
+        self.genelist = genelist
         self.downloadgenelist = self.genelist[:]
         if not os.path.exists(self.cache):
             print('self.cache does not exist')
@@ -478,6 +483,10 @@ class Analysis:
             self.download_and_retrieve_gene_data()
         else:
             self.creategenecache()
+            for k, v in self.genecache.items():
+                if k in self.genelist:
+                    self.downloadgenelist.remove(k)
+            print(self.downloadgenelist)
             self.retrieveprobeids()
             if self.downloadgenelist:
                 for i in range(0, len(self.donorids)):

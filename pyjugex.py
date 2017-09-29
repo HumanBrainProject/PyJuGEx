@@ -1,11 +1,13 @@
-import analysis as mymodule
+#import analysis as mymodule
+import analysispyjugex as mymodule
 import nibabel as nib
 import urllib.request
 import json
 import csv
 import requests
 
-
+'''
+UNCOMMENT THIS PORTION IF YOU ARE USING ANALYSIS.PY
 def DifferentialGeneExpression(gene_cache):
     analysisjugex = mymodule.Analysis(gene_cache)
     return analysisjugex
@@ -21,4 +23,8 @@ def ReadParcellations(dictionaryimages, regionname):
     with open(filename, 'wb') as f:
         f.write(r.content)
     return filename
+'''
 
+def PyJugex(cache):
+    analysisjugex = mymodule.Analysis(cache)
+    return analysisjugex
