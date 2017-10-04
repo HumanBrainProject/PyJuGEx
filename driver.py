@@ -13,4 +13,6 @@ result = jugex.DifferentialAnalysis(genelist, roi1, roi2)
 if len([id for id in result if result[id] < .05]) > 0:
     print('Differentially expressed genes are : ')
     print([id for id in result if result[id] < .05])
+else:
+    print('There are no differentially expressed genes in those regions')
 
