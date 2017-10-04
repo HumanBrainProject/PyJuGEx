@@ -150,6 +150,7 @@ class Analysis:
             print(len(self.genecache),' genes exist in ', self.cache)
 
     def DifferentialAnalysis(self, genelist, roi1, roi2):
+        print('Starting the analysis. This may take some time.....')
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
