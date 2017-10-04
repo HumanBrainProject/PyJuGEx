@@ -4,14 +4,15 @@ import numpy as np
 from numpy import *
 import json
 from numpy.linalg import inv
-import urllib.request
 import scipy as sp
 import scipy.stats.mstats
 import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from scipy import stats
-
+from future.standard_library import install_aliases
+install_aliases()
+import urllib
 
 
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
