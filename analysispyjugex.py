@@ -114,7 +114,7 @@ def readSpecimenFactors(cache):
 
 class Analysis:
 
-    def __init__(self, gene_cache):
+    def __init__(self, gene_cache, verbose=False):
         """
         Initialize the Analysis class with various internal variables -
         refreshcache = True if no cache location is given, false otherwise.
@@ -142,6 +142,7 @@ class Analysis:
         self.mapthreshold = 2
         self.result = None
         self.cache = gene_cache
+        self.verboseflag = verbose
         if not os.path.exists(gene_cache):
             print(gene_cache,' does not exist. It will take some time ')
         else:
@@ -163,27 +164,31 @@ class Analysis:
         probes = json.load(f)
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
-        print(self.genecache)
+        if(self.verboseflag):
+            print(self.genecache)
 
 
     def retrieveprobeids(self):
         """
         Retrieve probe ids for the given gene lists
         """
-        print('genelist ',self.genelist)
+        if(self.verboseflag):
+            print('genelist ',self.genelist)
         for g in self.genelist:
             url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
             url += g
             url += "],rma::options[only$eq'probes.id']"
-            print(url)
+            if(self.verboseflag):
+                print(url)
             response = urllib.request.urlopen(url).read()
             data = xmltodict.parse(response)
             for d in data['Response']['probes']['probe']:
                 if g in self.downloadgenelist:
                     self.probeids = self.probeids + [d['id']]
                 self.genesymbols = self.genesymbols + [g]
-        print('probeids: ',self.probeids)
-        print('genesymbols: ',self.genesymbols)
+        if(self.verboseflag):
+            print('probeids: ',self.probeids)
+            print('genesymbols: ',self.genesymbols)
 
     def readCachedApiSpecimenData(self):
         """
@@ -220,7 +225,8 @@ class Analysis:
             apiDataC['probes'] = probesC
             apiDataC['zscores'] = zscoresC
             self.apidata['apiinfo'].append(apiDataC)
-            print('inside readcachedata ',len(apiDataC['samples']), ' ', apiDataC['zscores'].shape, ' ', len(apiDataC['probes']))
+            if(self.verboseflag):
+                print('inside readcachedata ',len(apiDataC['samples']), ' ', apiDataC['zscores'].shape, ' ', len(apiDataC['probes']))
 
     def set_ROI_MNI152(self, voi, index):
         """
@@ -241,7 +247,8 @@ class Analysis:
             else:
                 print('only 0 and 1 are valid choices')
                 exit()
-            print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
+            if(self.verboseflag):
+                print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
             self.main_r.append(revisedApiDataCombo)
 
 
@@ -307,7 +314,8 @@ class Analysis:
         apiData['samples'] = samples
         apiData['probes'] = probes
         apiData['zscores'] = zscores
-        print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
+        if(self.verboseflag):
+            print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
         return apiData
 
     def expressionSpmCorrelation(self, img, apidataind, specimen):
@@ -357,7 +365,8 @@ class Analysis:
         url += "][donors$eq"
         url += donorId
         url += "]"
-        print(url)
+        if(self.verboseflag):
+            print(url)
         response = urllib.request.urlopen(url).read().decode('utf8')
         text = json.loads(response)
         data = text['msg']
@@ -443,13 +452,15 @@ class Analysis:
             url+= "'"
             url += specimens[i]
             url += "']&include=alignment3d"
-            print(url)
+            if(self.verboseflag):
+                print(url)
             response = urllib.request.urlopen(url).read().decode('utf8')
             text = json.loads(response)
             data = text['msg'][0]
             res = getSpecimenData(data)
             self.apidata['specimenInfo'].append(res)
-        print(self.apidata['specimenInfo'])
+        if(self.verboseflag):
+            print(self.apidata['specimenInfo'])
         for i in range(0, len(self.donorids)):
             factorPath = os.path.join(self.cache, self.donorids[i]+'/specimenName.txt')
             with open(factorPath, 'w') as outfile:
@@ -479,7 +490,8 @@ class Analysis:
         self.genelist = genelist
         self.downloadgenelist = self.genelist[:]
         if not os.path.exists(self.cache):
-            print('self.cache does not exist')
+            if(self.verboseflag):
+                print('self.cache does not exist')
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
@@ -487,7 +499,8 @@ class Analysis:
             for k, v in self.genecache.items():
                 if k in self.genelist:
                     self.downloadgenelist.remove(k)
-            print(self.downloadgenelist)
+            if(self.verboseflag):
+                print(self.downloadgenelist)
             self.retrieveprobeids()
             if self.downloadgenelist:
                 for i in range(0, len(self.donorids)):
@@ -509,7 +522,8 @@ class Analysis:
         area1_area = []
         area2_area = []
         combined_zscores = []
-        print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
+        if(self.verboseflag):
+            print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
         for i in range(0, len(self.main_r)):
             if self.main_r[i]['name'] == 'img1':
                 area1_zscores = area1_zscores + self.main_r[i]['zscores'][:]
@@ -527,16 +541,18 @@ class Analysis:
         factor_age_numeric = []
         factor_specimen = area1_specimen + area2_specimen
         factor_area = area1_area + area2_area
-        print(factor_specimen)
-        print(factor_area)
+        if(self.verboseflag):
+            print(factor_specimen)
+            print(factor_area)
 
         n_samples = len(combined_zscores)
         n_samples_area1 = len(area1_area)
         n_samples_area2 = len(area2_area)
-
-        print("some variables ",n_samples," , ",n_samples_area1," , ",n_samples_area2, " , ", len(factor_specimen))
+        if(self.verboseflag):
+            print("some variables ",n_samples," , ",n_samples_area1," , ",n_samples_area2, " , ", len(factor_specimen))
         specimenFactors = readSpecimenFactors(self.cache)
-        print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
+        if(self.verboseflag):
+            print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
 
         st = set(specimenFactors['name'])
         for ind, a in enumerate(factor_specimen):
@@ -545,11 +561,13 @@ class Analysis:
                 info_index = specimenFactors['name'].index(a)
             factor_age_numeric = factor_age_numeric + [specimenFactors['age'][info_index]]
             factor_race = factor_race + [specimenFactors['race'][info_index]]
-        print('race')
-        print(factor_race)
-        print('age')
-        print(factor_age_numeric)
-        print(len(self.genelist))
+
+        if(self.verboseflag):
+            print('race')
+            print(factor_race)
+            print('age')
+            print(factor_age_numeric)
+            print(len(self.genelist))
 
         allProbeData = getmeanzscores(self.genesymbols, combined_zscores, len(area1_zscores), len(area2_zscores))
         combined_zscores = np.zeros((len(allProbeData['combined_zscores']), len(allProbeData['combined_zscores'])))
@@ -558,7 +576,8 @@ class Analysis:
         area1_zscores = np.copy(allProbeData['area1_zscores'])
         area2_zscores = np.zeros((len(allProbeData['area2_zscores']), len(allProbeData['area2_zscores'])))
         area2_zscores = np.copy(allProbeData['area2_zscores'])
-        print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
+        if(self.verboseflag):
+            print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
 
         geneIds = []
@@ -570,7 +589,6 @@ class Analysis:
             geneIds = geneIds + [self.genesymbols[index]]
 
         n_genes = len(combined_zscores[0]) #SHOULD NOT THIS BE 285???
-        print(n_genes)
         Reference_Anovan_p = np.zeros(n_genes)
         Reference_Anovan_eta2 = np.zeros(n_genes)
         Reference_Anovan_CI_l = np.zeros(n_genes)
@@ -587,7 +605,8 @@ class Analysis:
             data['Zscores'] = combined_zscores[:,i]
             mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
             aov_table = sm.stats.anova_lm(mod, typ=1)
-            print(aov_table)
+            if(self.verboseflag):
+                print(aov_table)
 
             F_vec_ref_anovan[i] = aov_table['F'][0]
             ss_total = aov_table['sum_sq'][0]+aov_table['sum_sq'][1]+aov_table['sum_sq'][4]
@@ -639,7 +658,8 @@ class Analysis:
             sum = len([1 for a in ref if a >= val])
             FWE_corrected_p[j] = sum/n_rep
         self.result = dict(zip(geneIds, FWE_corrected_p))
-        print(self.result)
+        if(self.verboseflag):
+            print(self.result)
 
 
     def pvalues(self):

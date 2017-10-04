@@ -25,6 +25,6 @@ def ReadParcellations(dictionaryimages, regionname):
     return filename
 '''
 
-def PyJugex(cache):
-    analysisjugex = mymodule.Analysis(cache)
+def PyJugex(cache, verbose):
+    analysisjugex = mymodule.Analysis(cache, verbose)
     return analysisjugex
