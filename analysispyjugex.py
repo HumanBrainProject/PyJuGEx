@@ -10,8 +10,6 @@ import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from scipy import stats
-from future.standard_library import install_aliases
-install_aliases()
 import urllib
 
 
