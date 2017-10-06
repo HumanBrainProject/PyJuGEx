@@ -150,10 +150,10 @@ class Analysis:
             print(len(self.genecache),' genes exist in ', self.cache)
 
     def DifferentialAnalysis(self, genelist, roi1, roi2):
-        print('Starting the analysis. This may take some time.....')
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
+        print('Starting the analysis. This may take some time.....')
         self.run()
         result = self.pvalues()
         return result
@@ -168,11 +168,24 @@ class Analysis:
         if(self.verboseflag):
             print(self.genecache)
 
+    def readgenetoprobeidscache(self):
+        f = open('genetoprobecache.txt', 'r')
+        genecachedup = json.load(f)
+        for g in self.genelist:
+            if g in self.downloadgenelist:
+                for c in range(0, len(genecachedup[g])):
+                    self.probeids = self.probeids + [genecachedup[g][c]['id']]
+            for c in range(0, len(genecachedup[g])):
+                self.genesymbols = self.genesymbols + [g]
+        if self.verboseflag:
+            print(self.genesymbols)
+            print(self.probeids)
 
     def retrieveprobeids(self):
         """
         Retrieve probe ids for the given gene lists
         """
+        connection = False
         if(self.verboseflag):
             print('genelist ',self.genelist)
         for g in self.genelist:
@@ -181,15 +194,22 @@ class Analysis:
             url += "],rma::options[only$eq'probes.id']"
             if(self.verboseflag):
                 print(url)
-            response = urllib.request.urlopen(url).read()
-            data = xmltodict.parse(response)
-            for d in data['Response']['probes']['probe']:
-                if g in self.downloadgenelist:
-                    self.probeids = self.probeids + [d['id']]
-                self.genesymbols = self.genesymbols + [g]
-        if(self.verboseflag):
-            print('probeids: ',self.probeids)
-            print('genesymbols: ',self.genesymbols)
+            try:
+                response = urllib.request.urlopen(url).read()
+                data = xmltodict.parse(response)
+                for d in data['Response']['probes']['probe']:
+                    if g in self.downloadgenelist:
+                        self.probeids = self.probeids + [d['id']]
+                    self.genesymbols = self.genesymbols + [g]
+                if(self.verboseflag):
+                    print('probeids: ',self.probeids)
+                    print('genesymbols: ',self.genesymbols)
+            except:
+                print('Cannot establish a network connection. Trying to read from the cache')
+                connection = True
+                break
+        if(connection):
+            self.readgenetoprobeidscache()
 
     def readCachedApiSpecimenData(self):
         """
@@ -499,7 +519,9 @@ class Analysis:
             self.creategenecache()
             for k, v in self.genecache.items():
                 if k in self.genelist:
-                    self.downloadgenelist.remove(k)
+                    self.downloadgenelist.remove(k)            
+            if(len(self.downloadgenelist) > 0):
+                print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
             if(self.verboseflag):
                 print(self.downloadgenelist)
             self.retrieveprobeids()
