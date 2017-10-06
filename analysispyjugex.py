@@ -518,7 +518,7 @@ class Analysis:
             for k, v in self.genecache.items():
                 if k in self.genelist:
                     self.downloadgenelist.remove(k)            
-            if(len(self.downloadgenelist) > 0):
+            if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
             if(self.verboseflag):
                 print(self.downloadgenelist)
