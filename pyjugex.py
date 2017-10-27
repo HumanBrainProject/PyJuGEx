@@ -1,7 +1,6 @@
 #import analysis as mymodule
 import analysispyjugex as mymodule
 import nibabel as nib
-import urllib.request
 import json
 import csv
 import requests
