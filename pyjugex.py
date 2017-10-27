@@ -1,9 +1,5 @@
 #import analysis as mymodule
 import analysispyjugex as mymodule
-import nibabel as nib
-import json
-import csv
-import requests
 
 '''
 UNCOMMENT THIS PORTION IF YOU ARE USING ANALYSIS.PY

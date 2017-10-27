@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
+from __future__ import print_function
 import os
 import numpy as np
 from numpy import *
@@ -10,8 +12,10 @@ import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from scipy import stats
-import urllib
-
+import sys
+import requests, requests.exceptions
+if sys.version_info[0] >=3 :
+    import urllib
 
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
@@ -71,8 +75,13 @@ def buildSpecimenFactors(cache):
     specimenFactors['race'] = []
     specimenFactors['gender'] = []
     specimenFactors['age'] = []
-    response = urllib.request.urlopen(url).read().decode('utf8')
-    text = json.loads(response)
+    if sys.version_info[0] >= 3:
+        response = urllib.request.urlopen(url).read().decode('utf8')
+        text = json.loads(response)
+    else:
+        #response = requests.get(url)
+        #text = json.loads(response.text)
+        text = requests.get(url).json()
     factorPath = os.path.join(cache, 'specimenFactors.txt')
     with open(factorPath, 'w') as outfile:
         json.dump(text, outfile)
@@ -137,7 +146,7 @@ class Analysis:
         self.apidata['apiinfo'] = []
         self.vois = []
         self.main_r = []
-        self.mapthreshold = 2
+        self.mapthreshold = 0.2
         self.result = None
         self.cache = gene_cache
         self.verboseflag = verbose
@@ -151,6 +160,7 @@ class Analysis:
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
+
         print('Starting the analysis. This may take some time.....')
         self.run()
         result = self.pvalues()
@@ -192,9 +202,29 @@ class Analysis:
             url += "],rma::options[only$eq'probes.id']"
             if(self.verboseflag):
                 print(url)
-            try:
-                response = urllib.request.urlopen(url).read()
-                data = xmltodict.parse(response)
+            if sys.version_info[0] >= 3:
+                try:
+                    response = urllib.request.urlopen(url).read()
+                except URLError as e:
+                    if hasattr(e, 'reason'):
+                        print('We failed to reach a server.')
+                        print('Reason: ', e.reason)
+                    elif hasattr(e, 'code'):
+                        print('The server couldn\'t fulfill the request.')
+                        print('Error code: ', e.code)
+            else:
+                try:
+                    response = requests.get(url)
+                except requests.exceptions.RequestException as e:
+                    print(e)
+                    connection = True
+            if connection is True:
+                self.readgenetoprobeidscache()
+            else:
+                if sys.version_info[0] < 3:
+                    data = xmltodict.parse(response.text)
+                else:
+                    data = xmltodict.parse(response)
                 for d in data['Response']['probes']['probe']:
                     if g in self.downloadgenelist:
                         self.probeids = self.probeids + [d['id']]
@@ -202,12 +232,7 @@ class Analysis:
                 if(self.verboseflag):
                     print('probeids: ',self.probeids)
                     print('genesymbols: ',self.genesymbols)
-            except:
-                print('Cannot establish a network connection. Trying to read from the cache')
-                connection = True
-                break
-        if(connection):
-            self.readgenetoprobeidscache()
+
 
     def readCachedApiSpecimenData(self):
         """
@@ -271,7 +296,6 @@ class Analysis:
             self.main_r.append(revisedApiDataCombo)
 
 
-
     def queryapi(self, donorId):
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         for p in self.probeids:
@@ -281,8 +305,12 @@ class Analysis:
         url += "][donors$eq"
         url += donorId
         url += "]"
-        response = urllib.request.urlopen(url).read().decode('utf8')
-        text = json.loads(response)
+        if sys.version_info[0] >= 3:
+            response = urllib.request.urlopen(url).read().decode('utf8')
+            text = json.loads(response)
+        else:
+            response = requests.get(url)
+            text = requests.get(url).json()
         data = text['msg']
         samples = []
         probes = []
@@ -301,6 +329,7 @@ class Analysis:
             for j in range(0, nsamples):
                 zscores[j][i] = probes[i]['z-score'][j]
 
+
         fileName = os.path.join(donorPath, 'samples.txt')
         with open(fileName, 'w') as outfile:
             json.dump(data['samples'], outfile)
@@ -315,12 +344,12 @@ class Analysis:
         fileName = os.path.join(donorPath, 'zscores.txt')
         np.savetxt(fileName, zscores)
         zscoresC = np.loadtxt(fileName)
-
+        '''
         fileName = os.path.join(donorPath, 'samples.txt')
         f = open(fileName, "r")
         samplesC = json.load(f)
         f.close()
-
+        '''
         fileName = os.path.join(donorPath, 'probes.txt')
         f = open(fileName, "r")
         probesC = json.load(f)
@@ -336,6 +365,8 @@ class Analysis:
         if(self.verboseflag):
             print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
         return apiData
+
+
 
     def expressionSpmCorrelation(self, img, apidataind, specimen):
         """
@@ -353,11 +384,11 @@ class Analysis:
         Mni = specimen['alignment3d']
         T = np.dot(invimgMni, Mni)
         coords = transformSamples(apidataind['samples'], T)
-        coords = np.rint(coords)
+        coords = np.rint(coords)       
         for i in range(0, len(coords)):
             coord = coords[i]
             sum = (coord > 0).sum()
-            if sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold/10 or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0:
+            if sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0:
                 coords[i] = [-1, -1, -1]
         for i in range(0, len(coords)):
             coord = coords[i]
@@ -473,8 +504,11 @@ class Analysis:
             url += "']&include=alignment3d"
             if(self.verboseflag):
                 print(url)
-            response = urllib.request.urlopen(url).read().decode('utf8')
-            text = json.loads(response)
+            if sys.version_info[0] >= 3:
+                response = urllib.request.urlopen(url).read().decode('utf8')
+                text = json.loads(response)
+            else:
+                text = requests.get(url).json()
             data = text['msg'][0]
             res = getSpecimenData(data)
             self.apidata['specimenInfo'].append(res)
@@ -650,6 +684,7 @@ class Analysis:
             Reference_Anovan_p[i] = aov_table['PR(>F)'][0] #p(1)
 
         n_rep = 1000
+        invn_rep = 1/n_rep
         FWE_corrected_p = np.zeros(n_genes)
         F_mat_perm_anovan = np.zeros((n_rep, n_genes))
         p_mat_perm_anovan = np.zeros((n_rep, n_genes))
@@ -675,9 +710,9 @@ class Analysis:
             val = F_vec_ref_anovan[j]
             list1 = F_mat_perm_anovan[:,j]
             sum = len([1 for a in list1 if a >= val])
-            Uncorrected_permuted_p[j] = sum/n_rep
+            Uncorrected_permuted_p[j] = sum*invn_rep
             sum = len([1 for a in ref if a >= val])
-            FWE_corrected_p[j] = sum/n_rep
+            FWE_corrected_p[j] = sum*invn_rep
         self.result = dict(zip(geneIds, FWE_corrected_p))
         if(self.verboseflag):
             print(self.result)

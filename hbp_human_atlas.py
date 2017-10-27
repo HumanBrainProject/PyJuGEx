@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#Inpython2
 import nibabel as nib
 import requests
 
@@ -22,9 +23,9 @@ dictionaryimages['FP2'] = 'https://hbp-unic.fz-juelich.de:7112/UFTP/rest/access/
 MNI152 = True
 
 class jubrain:
-    def probability_map(regionname, coordspace):
+    @classmethod
+    def probability_map(cls, regionname, coordspace):
         url = dictionaryimages[regionname]
-        print(url)
         last = url.split('.')[-1]
         r = requests.get(url, verify=False)
         if last == 'nii':
