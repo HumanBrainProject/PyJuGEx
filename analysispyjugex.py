@@ -218,20 +218,22 @@ class Analysis:
                 except requests.exceptions.RequestException as e:
                     print(e)
                     connection = True
+            '''
             if connection is True:
                 self.readgenetoprobeidscache()
             else:
-                if sys.version_info[0] < 3:
-                    data = xmltodict.parse(response.text)
-                else:
-                    data = xmltodict.parse(response)
-                for d in data['Response']['probes']['probe']:
-                    if g in self.downloadgenelist:
-                        self.probeids = self.probeids + [d['id']]
-                    self.genesymbols = self.genesymbols + [g]
-                if(self.verboseflag):
-                    print('probeids: ',self.probeids)
-                    print('genesymbols: ',self.genesymbols)
+            '''
+            if sys.version_info[0] < 3:
+                data = xmltodict.parse(response.text)
+            else:
+                data = xmltodict.parse(response)
+            for d in data['Response']['probes']['probe']:
+                if g in self.downloadgenelist:
+                    self.probeids = self.probeids + [d['id']]
+                self.genesymbols = self.genesymbols + [g]
+            if(self.verboseflag):
+                print('probeids: ',self.probeids)
+                print('genesymbols: ',self.genesymbols)
 
 
     def readCachedApiSpecimenData(self):
