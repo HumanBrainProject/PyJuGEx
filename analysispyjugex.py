@@ -339,27 +339,10 @@ class Analysis:
         fileName = os.path.join(donorPath, 'probes.txt')
         with open(fileName, 'w') as outfile:
             json.dump(data['probes'], outfile)
-        f = open(fileName, "r")
-        probesC = json.load(f)
-        f.close()
 
         fileName = os.path.join(donorPath, 'zscores.txt')
         np.savetxt(fileName, zscores)
-        zscoresC = np.loadtxt(fileName)
-        '''
-        fileName = os.path.join(donorPath, 'samples.txt')
-        f = open(fileName, "r")
-        samplesC = json.load(f)
-        f.close()
-        '''
-        fileName = os.path.join(donorPath, 'probes.txt')
-        f = open(fileName, "r")
-        probesC = json.load(f)
-        f.close()
-
-        fileName = os.path.join(donorPath, 'zscores.txt')
-        zscoresC = np.loadtxt(fileName)
-
+    
         apiData = dict()
         apiData['samples'] = samples
         apiData['probes'] = probes
