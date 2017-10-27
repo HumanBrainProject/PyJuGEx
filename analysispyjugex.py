@@ -175,7 +175,7 @@ class Analysis:
             self.genecache.update({p['gene-symbol'] : None})
         if(self.verboseflag):
             print(self.genecache)
-
+    '''
     def readgenetoprobeidscache(self):
         f = open('genetoprobecache.txt', 'r')
         genecachedup = json.load(f)
@@ -188,7 +188,7 @@ class Analysis:
         if self.verboseflag:
             print(self.genesymbols)
             print(self.probeids)
-
+    '''
     def retrieveprobeids(self):
         """
         Retrieve probe ids for the given gene lists
