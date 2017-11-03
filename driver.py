@@ -11,8 +11,16 @@ genelist = ['ADRA2A', 'AVPR1B', 'CHRM2', 'CNR1', 'CREB1', 'CRH', 'CRHR1', 'CRHR2
 roi1 = atlas.jubrain.probability_map('FP1', atlas.MNI152)
 roi2 = atlas.jubrain.probability_map('FP2', atlas.MNI152)
 #UNCOMMENT THE FOLLOWING TWO LINES UPLOAD THE PMAPS TO COLLAB STORAGE
-#collab.upload(roi1['name'])
-#collab.upload(roi2['name'])
+'''
+collab.upload(roi1['name'])
+collab.upload(roi2['name'])
+#PRINT JUST UPLOADED FILES
+clients = get_hbp_service_client()
+collab_path = get_collab_storage_path()
+pmap_folder = collab_path + '/pmaps'
+print(clients.storage.list(pmap_folder))
+'''
+
 jugex = pyjugex.PyJugex(cache=".pyjugex", verbose=False)
 result = jugex.DifferentialAnalysis(genelist, roi1['image'], roi2['image'])
 if len([id for id in result if result[id] < .05]) > 0:
