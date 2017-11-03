@@ -26,6 +26,7 @@ MNI152 = True
 class jubrain:
     @classmethod
     def probability_map(cls, regionname, coordspace):
+        regiondict = {}
         url = dictionaryimages[regionname]
         last = url.split('.')[-1]
         r = requests.get(url, verify=False)
@@ -38,4 +39,7 @@ class jubrain:
             exit()
         with open(filename, 'wb') as f:
             f.write(r.content)
-        return nib.load(filename)
+        regiondict['image'] = nib.load(filename)
+        regiondict['name'] = filename
+        return regiondict
+        #return nib.load(filename)
