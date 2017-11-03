@@ -402,8 +402,13 @@ class Analysis:
         url += "]"
         if(self.verboseflag):
             print(url)
-        response = urllib.request.urlopen(url).read().decode('utf8')
-        text = json.loads(response)
+
+        if sys.version_info[0] >= 3:
+            response = urllib.request.urlopen(url).read().decode('utf8')
+            text = json.loads(response)
+        else:
+            response = requests.get(url)
+            text = requests.get(url).json()
         data = text['msg']
         samples = []
         probes = []
