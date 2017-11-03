@@ -13,7 +13,7 @@ roi2 = atlas.jubrain.probability_map('FP2', atlas.MNI152)
 #UNCOMMENT THE FOLLOWING TWO LINES UPLOAD THE PMAPS TO COLLAB STORAGE
 #collab.upload(roi1['name'])
 #collab.upload(roi2['name'])
-jugex = pyjugex.PyJugex(cache=".pyjugex", verbose=True)
+jugex = pyjugex.PyJugex(cache=".pyjugex", verbose=False)
 result = jugex.DifferentialAnalysis(genelist, roi1['image'], roi2['image'])
 if len([id for id in result if result[id] < .05]) > 0:
     print('Differentially expressed genes are : ')
