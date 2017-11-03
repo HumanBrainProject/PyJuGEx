@@ -7,7 +7,7 @@ class collab_pyjugex:
         client = get_hbp_service_client()
         collab_path = get_collab_storage_path()
         pmap_folder = collab_path + '/pmaps/'
-        if not os.path.exists(pmap_folder):
+        if not clients.storage.exists(pmap_folder):
             client.storage.mkdir(pmap_folder)
         ufilename = pmap_folder + filename
         if filename.split('.')[-1] == 'gz':
