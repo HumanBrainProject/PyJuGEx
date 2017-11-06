@@ -21,7 +21,7 @@ pmap_folder = collab_path + '/pmaps'
 print(clients.storage.list(pmap_folder))
 '''
 
-jugex = pyjugex.PyJugex(cache=".pyjugex", verbose=False)
+jugex = pyjugex.PyJugex(cache=".pyjugex", verbose=True)
 result = jugex.DifferentialAnalysis(genelist, roi1['image'], roi2['image'])
 if len([id for id in result if result[id] < .05]) > 0:
     print('Differentially expressed genes are : ')

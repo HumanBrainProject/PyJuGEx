@@ -14,8 +14,6 @@ from statsmodels.formula.api import ols
 from scipy import stats
 import sys
 import requests, requests.exceptions
-if sys.version_info[0] >=3 :
-    import urllib
 
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
@@ -75,6 +73,7 @@ def buildSpecimenFactors(cache):
     specimenFactors['race'] = []
     specimenFactors['gender'] = []
     specimenFactors['age'] = []
+    '''
     if sys.version_info[0] >= 3:
         response = urllib.request.urlopen(url).read().decode('utf8')
         text = json.loads(response)
@@ -82,6 +81,8 @@ def buildSpecimenFactors(cache):
         #response = requests.get(url)
         #text = json.loads(response.text)
         text = requests.get(url).json()
+    '''
+    text = requests.get(url).json()
     factorPath = os.path.join(cache, 'specimenFactors.txt')
     with open(factorPath, 'w') as outfile:
         json.dump(text, outfile)
@@ -202,6 +203,7 @@ class Analysis:
             url += "],rma::options[only$eq'probes.id']"
             if(self.verboseflag):
                 print(url)
+            '''
             if sys.version_info[0] >= 3:
                 try:
                     response = urllib.request.urlopen(url).read()
@@ -219,14 +221,23 @@ class Analysis:
                     print(e)
                     connection = True
             '''
+            try:
+                response = requests.get(url)
+            except requests.exceptions.RequestException as e:
+                print(e)
+                connection = True
+            '''
             if connection is True:
                 self.readgenetoprobeidscache()
             else:
+            '''
             '''
             if sys.version_info[0] < 3:
                 data = xmltodict.parse(response.text)
             else:
                 data = xmltodict.parse(response)
+            '''
+            data = xmltodict.parse(response.text)
             for d in data['Response']['probes']['probe']:
                 if g in self.downloadgenelist:
                     self.probeids = self.probeids + [d['id']]
@@ -307,12 +318,16 @@ class Analysis:
         url += "][donors$eq"
         url += donorId
         url += "]"
+        '''
         if sys.version_info[0] >= 3:
             response = urllib.request.urlopen(url).read().decode('utf8')
             text = json.loads(response)
         else:
             response = requests.get(url)
             text = requests.get(url).json()
+        '''
+        response = requests.get(url)
+        text = requests.get(url).json()
         data = text['msg']
         samples = []
         probes = []
@@ -402,13 +417,16 @@ class Analysis:
         url += "]"
         if(self.verboseflag):
             print(url)
-
+        '''
         if sys.version_info[0] >= 3:
             response = urllib.request.urlopen(url).read().decode('utf8')
             text = json.loads(response)
         else:
             response = requests.get(url)
             text = requests.get(url).json()
+        '''
+        response = requests.get(url)
+        text = requests.get(url).json()
         data = text['msg']
         samples = []
         probes = []
@@ -494,11 +512,14 @@ class Analysis:
             url += "']&include=alignment3d"
             if(self.verboseflag):
                 print(url)
+            '''
             if sys.version_info[0] >= 3:
                 response = urllib.request.urlopen(url).read().decode('utf8')
                 text = json.loads(response)
             else:
                 text = requests.get(url).json()
+            '''
+            text = requests.get(url).json()
             data = text['msg'][0]
             res = getSpecimenData(data)
             self.apidata['specimenInfo'].append(res)
