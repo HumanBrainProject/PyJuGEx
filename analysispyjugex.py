@@ -73,15 +73,6 @@ def buildSpecimenFactors(cache):
     specimenFactors['race'] = []
     specimenFactors['gender'] = []
     specimenFactors['age'] = []
-    '''
-    if sys.version_info[0] >= 3:
-        response = urllib.request.urlopen(url).read().decode('utf8')
-        text = json.loads(response)
-    else:
-        #response = requests.get(url)
-        #text = json.loads(response.text)
-        text = requests.get(url).json()
-    '''
     text = requests.get(url).json()
     factorPath = os.path.join(cache, 'specimenFactors.txt')
     with open(factorPath, 'w') as outfile:
@@ -176,20 +167,7 @@ class Analysis:
             self.genecache.update({p['gene-symbol'] : None})
         if(self.verboseflag):
             print(self.genecache)
-    '''
-    def readgenetoprobeidscache(self):
-        f = open('genetoprobecache.txt', 'r')
-        genecachedup = json.load(f)
-        for g in self.genelist:
-            if g in self.downloadgenelist:
-                for c in range(0, len(genecachedup[g])):
-                    self.probeids = self.probeids + [genecachedup[g][c]['id']]
-            for c in range(0, len(genecachedup[g])):
-                self.genesymbols = self.genesymbols + [g]
-        if self.verboseflag:
-            print(self.genesymbols)
-            print(self.probeids)
-    '''
+
     def retrieveprobeids(self):
         """
         Retrieve probe ids for the given gene lists
@@ -203,40 +181,12 @@ class Analysis:
             url += "],rma::options[only$eq'probes.id']"
             if(self.verboseflag):
                 print(url)
-            '''
-            if sys.version_info[0] >= 3:
-                try:
-                    response = urllib.request.urlopen(url).read()
-                except URLError as e:
-                    if hasattr(e, 'reason'):
-                        print('We failed to reach a server.')
-                        print('Reason: ', e.reason)
-                    elif hasattr(e, 'code'):
-                        print('The server couldn\'t fulfill the request.')
-                        print('Error code: ', e.code)
-            else:
-                try:
-                    response = requests.get(url)
-                except requests.exceptions.RequestException as e:
-                    print(e)
-                    connection = True
-            '''
             try:
                 response = requests.get(url)
             except requests.exceptions.RequestException as e:
                 print(e)
                 connection = True
-            '''
-            if connection is True:
-                self.readgenetoprobeidscache()
-            else:
-            '''
-            '''
-            if sys.version_info[0] < 3:
-                data = xmltodict.parse(response.text)
-            else:
-                data = xmltodict.parse(response)
-            '''
+
             data = xmltodict.parse(response.text)
             for d in data['Response']['probes']['probe']:
                 if g in self.downloadgenelist:
@@ -318,14 +268,6 @@ class Analysis:
         url += "][donors$eq"
         url += donorId
         url += "]"
-        '''
-        if sys.version_info[0] >= 3:
-            response = urllib.request.urlopen(url).read().decode('utf8')
-            text = json.loads(response)
-        else:
-            response = requests.get(url)
-            text = requests.get(url).json()
-        '''
         response = requests.get(url)
         text = requests.get(url).json()
         data = text['msg']
@@ -417,14 +359,6 @@ class Analysis:
         url += "]"
         if(self.verboseflag):
             print(url)
-        '''
-        if sys.version_info[0] >= 3:
-            response = urllib.request.urlopen(url).read().decode('utf8')
-            text = json.loads(response)
-        else:
-            response = requests.get(url)
-            text = requests.get(url).json()
-        '''
         response = requests.get(url)
         text = requests.get(url).json()
         data = text['msg']
@@ -454,21 +388,7 @@ class Analysis:
         #LOAD ZSCORES
         fileName = os.path.join(donorpath, 'zscores.txt')
         zscoresC = np.loadtxt(fileName)
-        '''
-        mri1 = np.array([s['sample']['mri'] for s in samples])
-        mri2 = np.array([s['sample']['mri'] for s in samplesC])
-        if not np.equal(mri1.all(), mri2.all()):
-            print('mri1 and mri2 are different')
-        np.savetxt('mri1.txt', mri1)
-        np.savetxt('mri2.txt', mri2)
-        exit()
-        '''
-        '''
-        apiDataC = dict()
-        apiDataC['samples'] = samples
-        apiDataC['probes'] = probesC + probes
-        apiDataC['zscores'] = np.append(zscoresC, zscores, axis=1)
-        '''
+
         fileName = os.path.join(donorpath, 'samples.txt')
         with open(fileName, 'w') as outfile:
             json.dump(samples, outfile)
@@ -479,24 +399,6 @@ class Analysis:
         zscores = np.append(zscoresC, zscores, axis=1)
         filename = os.path.join(donorpath, 'zscores.txt')
         np.savetxt(filename, zscores)
-
-        '''
-        if  not os.path.exists(filename):
-            np.savetxt(filename, zscores)
-        else:
-            zscoresE = np.loadtxt(filename)
-            print(zscoresE.shape)
-            zscoresE.append(zscores)
-            np.savetxt(filename, zscores)
-
-
-        apiData = dict()
-        apiData['samples'] = samples
-        apiData['probes'] = probes
-        apiData['zscores'] = zscores
-        print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
-        return apiData
-        '''
 
     def downloadspecimens(self):
         """
@@ -512,13 +414,6 @@ class Analysis:
             url += "']&include=alignment3d"
             if(self.verboseflag):
                 print(url)
-            '''
-            if sys.version_info[0] >= 3:
-                response = urllib.request.urlopen(url).read().decode('utf8')
-                text = json.loads(response)
-            else:
-                text = requests.get(url).json()
-            '''
             text = requests.get(url).json()
             data = text['msg'][0]
             res = getSpecimenData(data)
@@ -721,9 +616,15 @@ class Analysis:
             val = F_vec_ref_anovan[j]
             list1 = F_mat_perm_anovan[:,j]
             sum = len([1 for a in list1 if a >= val])
-            Uncorrected_permuted_p[j] = sum*invn_rep
+            if sys.version_info[0] < 3:
+                Uncorrected_permuted_p[j] = sum*invn_rep
+            else:
+                Uncorrected_permuted_p[j] = sum/n_rep #Otherwise gives one additional gene, SST
             sum = len([1 for a in ref if a >= val])
-            FWE_corrected_p[j] = sum*invn_rep
+            if sys.version_info[0] < 3:
+                FWE_corrected_p[j] = sum*invn_rep
+            else:
+                FWE_corrected_p[j] = sum/n_rep
         self.result = dict(zip(geneIds, FWE_corrected_p))
         if(self.verboseflag):
             print(self.result)
