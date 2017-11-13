@@ -13,27 +13,26 @@ class querydb:
             self.metadata = json.load(file)
         self.idpmapdict = {}
 
-
-
-    def fun(self, d):
+    def createidpmap(self, d):
         if isinstance(d, dict):
             if 'PMapURL' in d:
                 self.idpmapdict[d['name']] = d['PMapURL']
-                self.fun(d['children'])
+                self.createidpmap(d['children'])
             if 'PMapURL' not in d:
-                self.fun(d['children'])
+                self.createidpmap(d['children'])
         elif isinstance(d, list):
             for k in d:
-                self.fun(k)
+                self.createidpmap(k)
         else:
-            print(type(d))
+            print(type(d),' is not supported ')
             exit()
 
     def printrois(self):
+        self.createidpmap(self.metadata[0])
         if sys.version_info[0] < 3:
-            for key, value in self.metadata[0].iteritems():
-                print(key,' ',value)
+            for key, values in self.idpmapdict.iteritems():
+                print(key,' values = ',values)
         else:
-            self.fun(self.metadata[0])
             for key, values in self.idpmapdict.items():
                 print(key,' values = ',values)
+
