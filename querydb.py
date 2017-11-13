@@ -16,7 +16,10 @@ class querydb:
     def createidpmap(self, d):
         if isinstance(d, dict):
             if 'PMapURL' in d:
-                self.idpmapdict[d['name']] = d['PMapURL']
+                if 'ontologyMetadata' in d and '_Id' in d['ontologyMetadata']:
+                    self.idpmapdict[d['ontologyMetadata']['_Id']] = d['PMapURL']
+                else:
+                    self.idpmapdict[d['name']] = d['PMapURL']
                 self.createidpmap(d['children'])
             if 'PMapURL' not in d:
                 self.createidpmap(d['children'])
