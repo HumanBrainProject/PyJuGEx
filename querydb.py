@@ -32,9 +32,7 @@ class querydb:
             exit()
 
     def getidfromname(self, name):
-        for item in self.rois.fetchAll():
-            if item['Display name'] == name:
-                return item['_Id']
+        return [item['_Id'] for item in self.rois.fetchAll() if item['Display name'] == name][0]
         print('Roi name not found in the database')
         return
 
@@ -46,10 +44,8 @@ class querydb:
     '''
 
     def getpmapurlfromid(self, id):
-        if id in self.idpmapdict:
-            return self.idpmapdict[id]
-        else:
-            print('Not a valid id')
+        return self.idpmapdict[id]
+        print('Not a valid id')
         return
 
     def printrois(self):
