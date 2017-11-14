@@ -3,4 +3,8 @@
 import querydb
 
 q = querydb.querydb()
-q.printrois()
+#q.printrois()
+id = q.getidfromname('Area 3a (PostCG)')
+print(id)
+pmapurl = q.getpmapurlfromid(id)
+print(pmapurl)

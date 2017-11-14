@@ -11,7 +11,8 @@ class querydb:
         self.rois = self.db["rois"]
         with open('files/filteredJuBrainJson.json') as file:
             self.metadata = json.load(file)
-        self.idpmapdict = {}
+        self.idpmapdict = {}        
+        self.createidpmap(self.metadata[0])
 
     def createidpmap(self, d):
         if isinstance(d, dict):
@@ -30,12 +31,33 @@ class querydb:
             print(type(d),' is not supported ')
             exit()
 
+    def getidfromname(self, name):
+        for item in self.rois.fetchAll():
+            if item['Display name'] == name:
+                return item['_Id']
+        print('Roi name not found in the database')
+        return
+
+    '''
+    def getpmap(self, id):
+        for item in self.rois.fetchAll():
+            if item['_Id'] is id:
+                print(item['PmapURL']) #Ideally this should return the pmaps once they are part of the database
+    '''
+
+    def getpmapurlfromid(self, id):
+        if id in self.idpmapdict:
+            return self.idpmapdict[id]
+        else:
+            print('Not a valid id')
+        return
+
     def printrois(self):
-        self.createidpmap(self.metadata[0])
         if sys.version_info[0] < 3:
             for key, values in self.idpmapdict.iteritems():
                 print(key,' values = ',values)
         else:
             for key, values in self.idpmapdict.items():
                 print(key,' values = ',values)
+
 
