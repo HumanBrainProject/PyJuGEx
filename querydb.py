@@ -9,7 +9,7 @@ class querydb:
         self.conn = Connection(arangoURL='http://cudaws02.ime.kfa-juelich.de:8529', username="haimasree", password="haimasree123")
         self.db = self.conn["Metadata"]
         self.rois = self.db["rois"]
-        with open('files/filteredJuBrainJson.json') as file:
+        with open('files/filteredJuBrainJsonmod.json') as file:
             self.metadata = json.load(file)
         self.idpmapdict = {}        
         self.createidpmap(self.metadata[0])
@@ -32,7 +32,7 @@ class querydb:
             exit()
 
     def getidfromname(self, name):
-        return [item['_Id'] for item in self.rois.fetchAll() if item['Display name'] == name][0]
+        return [item['_Id'] for item in self.rois.fetchAll() if item['Display name'] == name]
         print('Roi name not found in the database')
         return
 

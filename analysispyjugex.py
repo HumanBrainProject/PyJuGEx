@@ -116,10 +116,10 @@ class Analysis:
     def __init__(self, gene_cache, verbose=False):
         """
         Initialize the Analysis class with various internal variables -
-        refreshcache = True if no cache location is given, false otherwise.
-        cache = Disk location where data from Allen Brain API has been downloaded and stored.
+        gene_cache = Disk location where data from Allen Brain API has been downloaded and stored.
         probeids = list of probe ids associated with the give list of genes.
         genelist = given list of genes
+        downloadgenelist = list of genes whose information is not in the cache yet, needs to be downloaded
         genesymbols =
         donorids = size donor ids of Allen Brain API
         vois = list fo two nii volumes for each region of interest

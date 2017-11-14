@@ -23,13 +23,22 @@ dictionaryimages['FP2'] = 'https://hbp-unic.fz-juelich.de:7112/UFTP/rest/access/
 
 MNI152 = True
 
-class jubrain:
+class jubrain:        
     @classmethod
     def probability_map(cls, regionname, coordspace):
-        regiondict = {}
+        if coordspace is False:
+            print('Only MNI152 template space is supported')
+            exit()
+        if regionname not in dictionaryimages:
+            print('Regionname',regionname,'is not present in the database')
+            exit()
         url = dictionaryimages[regionname]
         last = url.split('.')[-1]
-        r = requests.get(url, verify=False)
+        try:
+            r = requests.get(url, verify=False)
+        except requests.exceptions.RequestException as e:
+            print(e)
+            exit()
         if last == 'nii':
             filename = 'output'+regionname+'.'+last
         elif last == 'gz':
@@ -39,7 +48,4 @@ class jubrain:
             exit()
         with open(filename, 'wb') as f:
             f.write(r.content)
-        regiondict['image'] = nib.load(filename)
-        regiondict['name'] = filename
-        return regiondict
-        #return nib.load(filename)
+        return nib.load(filename)
