@@ -154,6 +154,11 @@ class Analysis:
             print(len(self.genecache),' genes exist in ', self.cache)
 
     def DifferentialAnalysis(self, genelist, roi1, roi2):
+        if not genelist:
+            print('Atleast one gene is needed for the analysis')
+            exit()
+        if not roi1 or not roi2:
+            print('Atleast two regions are needed for the analysis')
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
@@ -181,9 +186,8 @@ class Analysis:
         if(self.verboseflag):
             print('genelist ',self.genelist)
         for g in self.genelist:
-            url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
-            url += g
-            url += "],rma::options[only$eq'probes.id']"
+            url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"+g+"],rma::options[only$eq'probes.id']"
+
             if(self.verboseflag):
                 print(url)
             try:
@@ -260,7 +264,7 @@ class Analysis:
             else:
                 print('only 0 and 1 are valid choices')
                 exit()
-            if(self.verboseflag):
+            if self.verboseflag:
                 print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
             self.main_r.append(revisedApiDataCombo)
 
@@ -268,12 +272,9 @@ class Analysis:
     def queryapi(self, donorId):
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         for p in self.probeids:
-            url += p
-            url += ","
+            url += p+","
         url = url[:-1]
-        url += "][donors$eq"
-        url += donorId
-        url += "]"
+        url += "][donors$eq"+donorId+"]"
         try:
             response = requests.get(url)
             text = requests.get(url).json()
@@ -362,12 +363,9 @@ class Analysis:
         """
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         for p in self.probeids:
-            url += p
-            url += ","
+            url += p+","
         url = url[:-1]
-        url += "][donors$eq"
-        url += donorId
-        url += "]"
+        url += "][donors$eq"+donorId+"]"
         if(self.verboseflag):
             print(url)
         try:
@@ -425,10 +423,7 @@ class Analysis:
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
         self.apidata['specimenInfo'] = []
         for i in range(0, len(specimens)):
-            url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"
-            url+= "'"
-            url += specimens[i]
-            url += "']&include=alignment3d"
+            url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"+specimens[i]+"']&include=alignment3d"
             if(self.verboseflag):
                 print(url)    
             try:
