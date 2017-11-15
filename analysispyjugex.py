@@ -73,7 +73,12 @@ def buildSpecimenFactors(cache):
     specimenFactors['race'] = []
     specimenFactors['gender'] = []
     specimenFactors['age'] = []
-    text = requests.get(url).json()
+    try:
+        text = requests.get(url).json()
+    except requests.exceptions.RequestException as e:
+        print('In buildspecimenfactors')
+        print(e)
+        exit()
     factorPath = os.path.join(cache, 'specimenFactors.txt')
     with open(factorPath, 'w') as outfile:
         json.dump(text, outfile)
@@ -184,6 +189,7 @@ class Analysis:
             try:
                 response = requests.get(url)
             except requests.exceptions.RequestException as e:
+                print('In retreiveprobeids')
                 print(e)
                 connection = True
 
@@ -268,8 +274,13 @@ class Analysis:
         url += "][donors$eq"
         url += donorId
         url += "]"
-        response = requests.get(url)
-        text = requests.get(url).json()
+        try:
+            response = requests.get(url)
+            text = requests.get(url).json()
+        except requests.exceptions.RequestException as e:
+            print('In queryapi ')
+            print(e)
+            exit()
         data = text['msg']
         samples = []
         probes = []
