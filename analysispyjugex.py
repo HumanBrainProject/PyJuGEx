@@ -370,8 +370,14 @@ class Analysis:
         url += "]"
         if(self.verboseflag):
             print(url)
-        response = requests.get(url)
-        text = requests.get(url).json()
+        try:
+            response = requests.get(url)
+            text = requests.get(url).json()
+
+        except requests.exceptions.RequestException as e:
+            print('In queryapipartial ')
+            print(e)
+            exit()
         data = text['msg']
         samples = []
         probes = []
@@ -424,7 +430,7 @@ class Analysis:
             url += specimens[i]
             url += "']&include=alignment3d"
             if(self.verboseflag):
-                print(url)
+                print(url)    
             text = requests.get(url).json()
             data = text['msg'][0]
             res = getSpecimenData(data)
