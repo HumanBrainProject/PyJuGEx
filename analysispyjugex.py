@@ -431,7 +431,13 @@ class Analysis:
             url += "']&include=alignment3d"
             if(self.verboseflag):
                 print(url)    
-            text = requests.get(url).json()
+            try:
+                text = requests.get(url).json()
+
+            except requests.exceptions.RequestException as e:
+                print('In downloadspecimens ')
+                print(e)
+                exit()
             data = text['msg'][0]
             res = getSpecimenData(data)
             self.apidata['specimenInfo'].append(res)
