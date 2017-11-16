@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 from __future__ import print_function
-import os
+import os, glob
 import numpy as np
 from numpy import *
 import json
@@ -63,8 +63,7 @@ def transformSamples(samples, T):
 
 def buildSpecimenFactors(cache):
     """
-    Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api
-    and create a dict.
+    Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
     """
     url = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
     specimenFactors = dict()
@@ -162,11 +161,15 @@ class Analysis:
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
-
+        self.cleanup()
         print('Starting the analysis. This may take some time.....')
         self.run()
         result = self.pvalues()
         return result
+
+    def cleanup(self):
+        for filename in glob.glob("output*"):
+            os.remove(filename)
 
     def creategenecache(self):
         donorpath = os.path.join(self.cache, self.donorids[0])
@@ -175,7 +178,7 @@ class Analysis:
         probes = json.load(f)
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
-        if(self.verboseflag):
+        if self.verboseflag:
             print(self.genecache)
 
     def retrieveprobeids(self):
@@ -183,12 +186,11 @@ class Analysis:
         Retrieve probe ids for the given gene lists
         """
         connection = False
-        if(self.verboseflag):
+        if self.verboseflag:
             print('genelist ',self.genelist)
         for g in self.genelist:
             url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"+g+"],rma::options[only$eq'probes.id']"
-
-            if(self.verboseflag):
+            if self.verboseflag:
                 print(url)
             try:
                 response = requests.get(url)
@@ -202,7 +204,7 @@ class Analysis:
                 if g in self.downloadgenelist:
                     self.probeids = self.probeids + [d['id']]
                 self.genesymbols = self.genesymbols + [g]
-            if(self.verboseflag):
+            if self.verboseflag:
                 print('probeids: ',self.probeids)
                 print('genesymbols: ',self.genesymbols)
 
@@ -242,7 +244,7 @@ class Analysis:
             apiDataC['probes'] = probesC
             apiDataC['zscores'] = zscoresC
             self.apidata['apiinfo'].append(apiDataC)
-            if(self.verboseflag):
+            if self.verboseflag:
                 print('inside readcachedata ',len(apiDataC['samples']), ' ', apiDataC['zscores'].shape, ' ', len(apiDataC['probes']))
 
     def set_ROI_MNI152(self, voi, index):
@@ -268,7 +270,6 @@ class Analysis:
                 print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
             self.main_r.append(revisedApiDataCombo)
 
-
     def queryapi(self, donorId):
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         for p in self.probeids:
@@ -283,8 +284,6 @@ class Analysis:
             print(e)
             exit()
         data = text['msg']
-        samples = []
-        probes = []
         if not os.path.exists(self.cache):
             os.makedirs(self.cache)
         donorPath = os.path.join(self.cache, donorId)
@@ -316,7 +315,7 @@ class Analysis:
         apiData['samples'] = samples
         apiData['probes'] = probes
         apiData['zscores'] = zscores
-        if(self.verboseflag):
+        if self.verboseflag:
             print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
         return apiData
 
@@ -366,7 +365,7 @@ class Analysis:
             url += p+","
         url = url[:-1]
         url += "][donors$eq"+donorId+"]"
-        if(self.verboseflag):
+        if self.verboseflag:
             print(url)
         try:
             response = requests.get(url)
@@ -424,11 +423,10 @@ class Analysis:
         self.apidata['specimenInfo'] = []
         for i in range(0, len(specimens)):
             url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"+specimens[i]+"']&include=alignment3d"
-            if(self.verboseflag):
+            if self.verboseflag:
                 print(url)    
             try:
                 text = requests.get(url).json()
-
             except requests.exceptions.RequestException as e:
                 print('In downloadspecimens ')
                 print(e)
@@ -436,7 +434,7 @@ class Analysis:
             data = text['msg'][0]
             res = getSpecimenData(data)
             self.apidata['specimenInfo'].append(res)
-        if(self.verboseflag):
+        if self.verboseflag:
             print(self.apidata['specimenInfo'])
         for i in range(0, len(self.donorids)):
             factorPath = os.path.join(self.cache, self.donorids[i]+'/specimenName.txt')
@@ -467,7 +465,7 @@ class Analysis:
         self.genelist = genelist
         self.downloadgenelist = self.genelist[:]
         if not os.path.exists(self.cache):
-            if(self.verboseflag):
+            if self.verboseflag:
                 print('self.cache does not exist')
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
@@ -478,7 +476,7 @@ class Analysis:
                     self.downloadgenelist.remove(k)            
             if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
-            if(self.verboseflag):
+            if self.verboseflag:
                 print(self.downloadgenelist)
             self.retrieveprobeids()
             if self.downloadgenelist:
@@ -501,7 +499,7 @@ class Analysis:
         area1_area = []
         area2_area = []
         combined_zscores = []
-        if(self.verboseflag):
+        if self.verboseflag:
             print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
         for i in range(0, len(self.main_r)):
             if self.main_r[i]['name'] == 'img1':
@@ -520,17 +518,17 @@ class Analysis:
         factor_age_numeric = []
         factor_specimen = area1_specimen + area2_specimen
         factor_area = area1_area + area2_area
-        if(self.verboseflag):
+        if self.verboseflag:
             print(factor_specimen)
             print(factor_area)
 
         n_samples = len(combined_zscores)
         n_samples_area1 = len(area1_area)
         n_samples_area2 = len(area2_area)
-        if(self.verboseflag):
+        if self.verboseflag:
             print("some variables ",n_samples," , ",n_samples_area1," , ",n_samples_area2, " , ", len(factor_specimen))
         specimenFactors = readSpecimenFactors(self.cache)
-        if(self.verboseflag):
+        if self.verboseflag:
             print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
 
         st = set(specimenFactors['name'])
@@ -541,7 +539,7 @@ class Analysis:
             factor_age_numeric = factor_age_numeric + [specimenFactors['age'][info_index]]
             factor_race = factor_race + [specimenFactors['race'][info_index]]
 
-        if(self.verboseflag):
+        if self.verboseflag:
             print('race')
             print(factor_race)
             print('age')
@@ -555,7 +553,7 @@ class Analysis:
         area1_zscores = np.copy(allProbeData['area1_zscores'])
         area2_zscores = np.zeros((len(allProbeData['area2_zscores']), len(allProbeData['area2_zscores'])))
         area2_zscores = np.copy(allProbeData['area2_zscores'])
-        if(self.verboseflag):
+        if self.verboseflag:
             print('combined_zscores shape ',combined_zscores.shape,' ',area1_zscores.shape,' ',area2_zscores.shape)
         uniqueId = np.copy(allProbeData['uniqueId'])
 
@@ -584,7 +582,7 @@ class Analysis:
             data['Zscores'] = combined_zscores[:,i]
             mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
             aov_table = sm.stats.anova_lm(mod, typ=1)
-            if(self.verboseflag):
+            if self.verboseflag:
                 print(aov_table)
 
             F_vec_ref_anovan[i] = aov_table['F'][0]
@@ -644,7 +642,7 @@ class Analysis:
             else:
                 FWE_corrected_p[j] = sum/n_rep
         self.result = dict(zip(geneIds, FWE_corrected_p))
-        if(self.verboseflag):
+        if self.verboseflag:
             print(self.result)
 
 
