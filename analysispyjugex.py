@@ -14,6 +14,7 @@ from statsmodels.formula.api import ols
 from scipy import stats
 import sys
 import requests, requests.exceptions
+import pandas as pd
 
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
@@ -66,12 +67,6 @@ def buildSpecimenFactors(cache):
     Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
     """
     url = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
-    specimenFactors = dict()
-    specimenFactors['id'] = []
-    specimenFactors['name'] = []
-    specimenFactors['race'] = []
-    specimenFactors['gender'] = []
-    specimenFactors['age'] = []
     try:
         text = requests.get(url).json()
     except requests.exceptions.RequestException as e:
@@ -82,24 +77,20 @@ def buildSpecimenFactors(cache):
     with open(factorPath, 'w') as outfile:
         json.dump(text, outfile)
     res = text['msg']
-    for i in range(0, len(res)):
-        specimenFactors['id'].append(res[i]['id'])
-        specimenFactors['name'].append(res[i]['name'])
-        specimenFactors['race'].append(res[i]['race_only'])
-        specimenFactors['gender'].append(res[i]['sex'])
-        specimenFactors['age'].append(res[i]['age']['days']/365)
+
+    specimenFactors = dict()
+    specimenFactors['id'] = [r['id'] for r in res]
+    specimenFactors['name'] = [r['name'] for r in res]
+    specimenFactors['race'] = [r['race_only'] for r in res]
+    specimenFactors['gender'] = [r['sex'] for r in res]
+    specimenFactors['age'] = [r['age']['days']/365 for r in res]
+
     return specimenFactors
 
 def readSpecimenFactors(cache):
     """
     Read various factors such as age, name, race, gender of the six specimens from disk.
     """
-    specimenFactors = dict.fromkeys(['id', 'name', 'race', 'gender', 'age'])
-    specimenFactors['id'] = []
-    specimenFactors['name'] = []
-    specimenFactors['race'] = []
-    specimenFactors['gender'] = []
-    specimenFactors['age'] = []
     fileName = os.path.join(cache, 'specimenFactors.txt')
     if not os.path.exists(fileName):
         specimenFactors = buildSpecimenFactors(cache)
@@ -107,12 +98,14 @@ def readSpecimenFactors(cache):
     content = json.load(f)
     f.close()
     res = content['msg']
-    for i in range(0, len(res)):
-        specimenFactors['id'].append(res[i]['id'])
-        specimenFactors['name'].append(res[i]['name'])
-        specimenFactors['race'].append(res[i]['race_only'])
-        specimenFactors['gender'].append(res[i]['sex'])
-        specimenFactors['age'].append(res[i]['age']['days']/365)
+
+    specimenFactors = dict()
+    specimenFactors['id'] = [r['id'] for r in res]
+    specimenFactors['name'] = [r['name'] for r in res]
+    specimenFactors['race'] = [r['race_only'] for r in res]
+    specimenFactors['gender'] = [r['sex'] for r in res]
+    specimenFactors['age'] = [r['age']['days']/365 for r in res]
+
     return specimenFactors
 
 class Analysis:
@@ -176,8 +169,10 @@ class Analysis:
         filename = os.path.join(donorpath, 'probes.txt')
         f = open(filename, "r")
         probes = json.load(f)
+
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
+
         if self.verboseflag:
             print(self.genecache)
 
@@ -200,10 +195,10 @@ class Analysis:
                 connection = True
 
             data = xmltodict.parse(response.text)
-            for d in data['Response']['probes']['probe']:
-                if g in self.downloadgenelist:
-                    self.probeids = self.probeids + [d['id']]
-                self.genesymbols = self.genesymbols + [g]
+
+            self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if g in self.downloadgenelist]
+            self.genesymbols = self.genesymbols + [g for d in data['Response']['probes']['probe']]
+
             if self.verboseflag:
                 print('probeids: ',self.probeids)
                 print('genesymbols: ',self.genesymbols)
@@ -291,14 +286,13 @@ class Analysis:
             os.makedirs(donorPath)
         nsamples = len(data['samples'])
         nprobes = len(data['probes'])
-        samples = data['samples']
-        probes = data['probes']
+        #samples = data['samples']
+        #probes = data['probes']
 
         zscores = np.zeros((nsamples, nprobes))
         for i in range(0, nprobes):
             for j in range(0, nsamples):
                 zscores[j][i] = probes[i]['z-score'][j]
-
 
         fileName = os.path.join(donorPath, 'samples.txt')
         with open(fileName, 'w') as outfile:
@@ -312,8 +306,8 @@ class Analysis:
         np.savetxt(fileName, zscores)
     
         apiData = dict()
-        apiData['samples'] = samples
-        apiData['probes'] = probes
+        apiData['samples'] = data['samples']
+        apiData['probes'] = data['probes']
         apiData['zscores'] = zscores
         if self.verboseflag:
             print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
@@ -347,6 +341,7 @@ class Analysis:
             coord = coords[i]
             sum = (coord > 0).sum()
             if sum == 3:
+#                revisedApiData['zscores'] = revisedApiData['zscores']apidataind['zscores'][i][:]
                 revisedApiData['zscores'].append(apidataind['zscores'][i])
                 revisedApiData['coords'].append(coord)
         revisedApiData['samples'] = apidataind['samples'][:]
@@ -370,7 +365,6 @@ class Analysis:
         try:
             response = requests.get(url)
             text = requests.get(url).json()
-
         except requests.exceptions.RequestException as e:
             print('In queryapipartial ')
             print(e)
@@ -484,6 +478,7 @@ class Analysis:
                     self.queryapipartial(self.donorids[i])
             self.readCachedApiSpecimenData()
 
+
     def run(self):
         self.performAnova()
 
@@ -584,7 +579,6 @@ class Analysis:
             aov_table = sm.stats.anova_lm(mod, typ=1)
             if self.verboseflag:
                 print(aov_table)
-
             F_vec_ref_anovan[i] = aov_table['F'][0]
             ss_total = aov_table['sum_sq'][0]+aov_table['sum_sq'][1]+aov_table['sum_sq'][4]
             ss_between_group_area =  aov_table['sum_sq'][0]
