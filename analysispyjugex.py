@@ -15,6 +15,7 @@ from scipy import stats
 import sys
 import requests, requests.exceptions
 import pandas as pd
+import shutil
 
 def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
@@ -139,8 +140,11 @@ class Analysis:
         self.result = None
         self.cache = gene_cache
         self.verboseflag = verbose
-        if not os.path.exists(gene_cache):
-            print(gene_cache,' does not exist. It will take some time ')
+        self.probepath = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
+        if os.path.exists(self.cache) and not os.path.exists(self.probepath):
+            shutil.rmtree(self.cache, ignore_errors = False)
+        if not os.path.exists(self.cache):
+            print(self.cache,' does not exist. It will take some time ')
         else:
             self.creategenecache()
             print(len(self.genecache),' genes exist in ', self.cache)
@@ -169,10 +173,8 @@ class Analysis:
         filename = os.path.join(donorpath, 'probes.txt')
         f = open(filename, "r")
         probes = json.load(f)
-
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
-
         if self.verboseflag:
             print(self.genecache)
 
@@ -266,9 +268,14 @@ class Analysis:
             self.main_r.append(revisedApiDataCombo)
 
     def queryapi(self, donorId):
-        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        for p in self.probeids:
-            url += p+","
+        #url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        #for p in self.probeids:
+            #url += p+","
+        #dup = ''.join(p+"," for p in self.probeids)
+        #urldup = url+dup
+        main = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        end = ''.join(p+"," for p in self.probeids)
+        url = main + end
         url = url[:-1]
         url += "][donors$eq"+donorId+"]"
         try:
@@ -286,13 +293,20 @@ class Analysis:
             os.makedirs(donorPath)
         nsamples = len(data['samples'])
         nprobes = len(data['probes'])
-        #samples = data['samples']
-        #probes = data['probes']
 
+        '''
         zscores = np.zeros((nsamples, nprobes))
         for i in range(0, nprobes):
             for j in range(0, nsamples):
-                zscores[j][i] = probes[i]['z-score'][j]
+                zscores[j][i] = data['probes'][i]['z-score'][j]
+        '''
+
+        zscores = np.zeros((nsamples, nprobes))
+        zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(nprobes)] for j in range(nsamples)])
+
+        fileName = os.path.join(donorPath, 'zscores.txt')
+        with open(fileName, 'wb') as f:
+            np.savetxt(f, zscores, fmt = '%.5f')
 
         fileName = os.path.join(donorPath, 'samples.txt')
         with open(fileName, 'w') as outfile:
@@ -302,9 +316,6 @@ class Analysis:
         with open(fileName, 'w') as outfile:
             json.dump(data['probes'], outfile)
 
-        fileName = os.path.join(donorPath, 'zscores.txt')
-        np.savetxt(fileName, zscores)
-    
         apiData = dict()
         apiData['samples'] = data['samples']
         apiData['probes'] = data['probes']
@@ -355,9 +366,14 @@ class Analysis:
         """
         Query Allen Brain Api for the given set of genes
         """
+        '''
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         for p in self.probeids:
             url += p+","
+        '''
+        main = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        end = ''.join(p+"," for p in self.probeids)
+        url = main + end
         url = url[:-1]
         url += "][donors$eq"+donorId+"]"
         if self.verboseflag:
@@ -382,12 +398,14 @@ class Analysis:
         nprobes = len(data['probes'])
         samples = data['samples']
         probes = data['probes']
-
+        '''
         zscores = np.zeros((nsamples, nprobes))
         for i in range(0, nprobes):
             for j in range(0, nsamples):
                 zscores[j][i] = probes[i]['z-score'][j]
-
+        '''
+        zscores = np.zeros((nsamples, nprobes))
+        zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(nprobes)] for j in range(nsamples)])
         #LOAD PROBES
         fileName = os.path.join(donorpath, 'probes.txt')
         f = open(fileName, "r")
@@ -427,7 +445,7 @@ class Analysis:
                 exit()
             data = text['msg'][0]
             res = getSpecimenData(data)
-            self.apidata['specimenInfo'].append(res)
+            self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [res]
         if self.verboseflag:
             print(self.apidata['specimenInfo'])
         for i in range(0, len(self.donorids)):
@@ -443,7 +461,7 @@ class Analysis:
         """
         self.apidata['apiinfo'] = []
         for i in range(0, len(self.donorids)):
-            self.apidata['apiinfo'].append(self.queryapi(self.donorids[i]))
+            self.apidata['apiinfo'] = self.apidata['apiinfo'] + [self.queryapi(self.donorids[i])]
 
     def download_and_retrieve_gene_data(self):
         """
@@ -458,6 +476,8 @@ class Analysis:
         """
         self.genelist = genelist
         self.downloadgenelist = self.genelist[:]
+        donorpath = os.path.join(self.cache, self.donorids[0])
+        donorprobe = os.path.join(donorpath, 'probes.txt')
         if not os.path.exists(self.cache):
             if self.verboseflag:
                 print('self.cache does not exist')

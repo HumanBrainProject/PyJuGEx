@@ -14,7 +14,7 @@ roi2 = atlas.jubrain.probability_map('FP2', atlas.MNI152)
 #roi1 = atlas.probability_map('Area Fp1 (Fpole)', 'MNI152')
 #roi2 = atlas.probability_map('Area Fp2 (Fpole)', 'MNI152')
 
-jugex = pyjugex.PyJugex(cache='.pyjugex', verbose=True)
+jugex = pyjugex.PyJugex(cache='.pyjugex', verbose=False)
 result = jugex.DifferentialAnalysis(genelist, roi1, roi2)
 if len([id for id in result if result[id] < .05]) > 0:
     print('Differentially expressed genes are : ')
