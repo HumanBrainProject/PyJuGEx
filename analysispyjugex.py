@@ -534,15 +534,9 @@ class Analysis:
         specimenFactors = readSpecimenFactors(self.cache)
         if self.verboseflag:
             print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
-
         st = set(specimenFactors['name'])
-        for ind, a in enumerate(factor_specimen):
-            info_index = 0
-            if a in st:
-                info_index = specimenFactors['name'].index(a)
-            factor_age_numeric = factor_age_numeric + [specimenFactors['age'][info_index]]
-            factor_race = factor_race + [specimenFactors['race'][info_index]]
-
+        factor_age_numeric = [specimenFactors['age'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['age'][0]] for ind, a in enumerate(factor_specimen)]
+        factor_race = [specimenFactors['race'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['race'][0]] for ind, a in enumerate(factor_specimen)]
         if self.verboseflag:
             print('race')
             print(factor_race)
