@@ -507,31 +507,15 @@ class Analysis:
         Perform one way anova on zscores as the dependent variable and specimen factors such as age, race, name and area
         as independent variables
         """
-        area1_zscores = []
-        area2_zscores = []
-        area1_specimen = []
-        area2_specimen = []
-        area1_area = []
-        area2_area = []
-        combined_zscores = []
         if self.verboseflag:
             print(" ",len(self.main_r)," ",self.main_r[0]['name']," ",self.main_r[1]['name'])
         area1_zscores = [r['zscores'][:] for r in self.main_r if r['name'] == 'img1']
         area1_specimen = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1']
         area1_area = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1']
-        #combined_zscores = [r['zscores'][:] for r in self.main_r if r['name'] == 'img1']
-        for i in range(0, len(self.main_r)):
-            if self.main_r[i]['name'] == 'img1':
-                print('done here')
-                #area1_zscores = area1_zscores + self.main_r[i]['zscores'][:]
-                #area1_specimen = area1_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
-                #area1_area = area1_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
-                combined_zscores = combined_zscores + self.main_r[i]['zscores'][:]
-            elif self.main_r[i]['name'] == 'img2':
-                area2_zscores = area2_zscores + self.main_r[i]['zscores'][:]
-                area2_specimen = area2_specimen + [self.main_r[i]['specimen']]*len(self.main_r[i]['zscores'])
-                area2_area = area2_area + [self.main_r[i]['name']]*len(self.main_r[i]['zscores'])
-                combined_zscores = combined_zscores + self.main_r[i]['zscores'][:]
+        area2_zscores = [r['zscores'][:] for r in self.main_r if r['name'] == 'img2']
+        area2_specimen = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
+        area2_area = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
+        combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
 
         factor_age = []
         factor_race = []
@@ -542,7 +526,6 @@ class Analysis:
         if self.verboseflag:
             print(factor_specimen)
             print(factor_area)
-
         n_samples = len(combined_zscores)
         n_samples_area1 = len(area1_area)
         n_samples_area2 = len(area2_area)
