@@ -23,12 +23,7 @@ def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
     """
     unique_gene_symbols = np.unique(gene_symbols)
     indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
-    winsorzed_mean_zscores = np.zeros((len(combined_zscores), len(unique_gene_symbols)))
-    tmp = [[] for _ in range(len(combined_zscores))]
-    for i in range (0, len(unique_gene_symbols)):
-        for j in range(0, len(combined_zscores)):
-            tmp[j] = [combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))]
-            winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1)) #maybe add a special case for one element in tmp
+    winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
     res = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
     res['uniqueId'] = unique_gene_symbols
     res['combined_zscores'] = winsorzed_mean_zscores
