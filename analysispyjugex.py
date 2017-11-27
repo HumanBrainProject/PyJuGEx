@@ -187,9 +187,9 @@ class Analysis:
             self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if g in self.downloadgenelist]
             self.genesymbols = self.genesymbols + [g for d in data['Response']['probes']['probe']]
 
-            if self.verboseflag:
-                print('probeids: ',self.probeids)
-                print('genesymbols: ',self.genesymbols)
+        if self.verboseflag:
+            print('probeids: ',self.probeids)
+            print('genesymbols: ',self.genesymbols)
 
 
     def readCachedApiSpecimenData(self):
@@ -501,13 +501,7 @@ class Analysis:
     def accumulate_result(self):
         invn_rep = 1/self.n_rep
         ref = self.F_mat_perm_anovan.max(1)
-        for i in range(0, self.n_genes):
-            val = self.F_vec_ref_anovan[i]
-            sum = len([1 for a in ref if a >= val])
-            if sys.version_info[0] < 3:
-                self.FWE_corrected_p[i] = sum*invn_rep
-            else:
-                self.FWE_corrected_p[i] = sum/self.n_rep
+        self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
         self.result = dict(zip(self.geneIds, self.FWE_corrected_p))
 
     def performAnova(self):
