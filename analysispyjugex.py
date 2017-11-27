@@ -18,7 +18,6 @@ import pandas as pd
 import shutil
 
 
-
 def getSpecimenData(info):
     """
     For each specimen, extract the name and alignment matrix and put into a dict object
@@ -46,52 +45,6 @@ def transformSamples(samples, T):
     coords = coords.transpose()
     return coords
 
-def buildSpecimenFactors(cache):
-    """
-    Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
-    """
-    url = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
-    try:
-        text = requests.get(url).json()
-    except requests.exceptions.RequestException as e:
-        print('In buildspecimenfactors')
-        print(e)
-        exit()
-    factorPath = os.path.join(cache, 'specimenFactors.txt')
-    with open(factorPath, 'w') as outfile:
-        json.dump(text, outfile)
-    res = text['msg']
-
-    specimenFactors = dict()
-    specimenFactors['id'] = [r['id'] for r in res]
-    specimenFactors['name'] = [r['name'] for r in res]
-    specimenFactors['race'] = [r['race_only'] for r in res]
-    specimenFactors['gender'] = [r['sex'] for r in res]
-    specimenFactors['age'] = [r['age']['days']/365 for r in res]
-
-    return specimenFactors
-
-def readSpecimenFactors(cache):
-    """
-    Read various factors such as age, name, race, gender of the six specimens from disk.
-    """
-    fileName = os.path.join(cache, 'specimenFactors.txt')
-    if not os.path.exists(fileName):
-        specimenFactors = buildSpecimenFactors(cache)
-    f = open(fileName, "r")
-    content = json.load(f)
-    f.close()
-    res = content['msg']
-
-    specimenFactors = dict()
-    specimenFactors['id'] = [r['id'] for r in res]
-    specimenFactors['name'] = [r['name'] for r in res]
-    specimenFactors['race'] = [r['race_only'] for r in res]
-    specimenFactors['gender'] = [r['sex'] for r in res]
-    specimenFactors['age'] = [r['age']['days']/365 for r in res]
-
-    return specimenFactors
-
 class Analysis:
 
     def __init__(self, gene_cache, verbose=False):
@@ -114,7 +67,8 @@ class Analysis:
         self.genesymbols = []
         self.genecache = {}
         self.donorids = ['15496', '14380', '15697', '9861', '12876', '10021'] #HARDCODING DONORIDS
-        self.apidata = dict.fromkeys(['apiinfo', 'specimeninfo'])
+        self.apidata = dict.fromkeys(['apiinfo', 'specimeninfo'])        
+        self.specimenFactors = dict.fromkeys(['id', 'name', 'race', 'gender', 'age'])
         self.apidata['specimenInfo'] = []
         self.apidata['apiinfo'] = []
         self.vois = []
@@ -125,7 +79,7 @@ class Analysis:
         self.cache = gene_cache
         self.verboseflag = verbose
         self.anova_data = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
-        self.all_probe_data = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
+        self.all_probe_data = dict.fromkeys(['uniqueId', 'combined_zscores'])
         self.probepath = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
         if os.path.exists(self.cache) and not os.path.exists(self.probepath):
             shutil.rmtree(self.cache, ignore_errors = False)
@@ -147,8 +101,7 @@ class Analysis:
         self.cleanup()
         print('Starting the analysis. This may take some time.....')
         self.performAnova()
-        result = self.pvalues()
-        return result
+        return self.result
 
     def cleanup(self):
         for filename in glob.glob("output*"):
@@ -446,24 +399,21 @@ class Analysis:
         winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
         self.all_probe_data['uniqueId'] = unique_gene_symbols
         self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
-        self.all_probe_data['area1_zscores'] = winsorzed_mean_zscores[0:area1len]
-        self.all_probe_data['area2_zscores'] = winsorzed_mean_zscores[area1len:]
-        #return res
 
     def initialize(self):
         combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
-        specimenFactors = readSpecimenFactors(self.cache)
+        self.readSpecimenFactors(self.cache)
         if self.verboseflag:
-            print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
+            print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))
         self.getmeanzscores(self.genesymbols, combined_zscores, len([r['name'] for r in self.main_r if r['name'] == 'img1']), len([r['name'] for r in self.main_r if r['name'] == 'img2']))
         st = set(self.genesymbols)
         self.geneIds = [self.genesymbols[self.genesymbols.index(a)] if a in st else [self.genesymbols[0]] for ind, a in enumerate(self.all_probe_data['uniqueId'])]
         self.n_genes = len(self.all_probe_data['combined_zscores'][0])
         self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
         self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
-        st = set(specimenFactors['name'])
-        self.anova_data['Age'] = [specimenFactors['age'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['age'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
-        self.anova_data['Race'] = [specimenFactors['race'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['race'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
+        st = set(self.specimenFactors['name'])
+        self.anova_data['Age'] = [self.specimenFactors['age'][self.specimenFactors['name'].index(a)] if a in st else [self.specimenFactors['age'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
+        self.anova_data['Race'] = [self.specimenFactors['race'][self.specimenFactors['name'].index(a)] if a in st else [self.specimenFactors['race'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
         if self.verboseflag:
             print('race')
             print(self.anova_data['Race'])
@@ -503,6 +453,8 @@ class Analysis:
         ref = self.F_mat_perm_anovan.max(1)
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
         self.result = dict(zip(self.geneIds, self.FWE_corrected_p))
+        if self.verboseflag:
+            print(self.result)
 
     def performAnova(self):
         """
@@ -513,7 +465,43 @@ class Analysis:
         self.first_iteration()
         self.fwe_correction()
 
-    def pvalues(self):
-        if self.verboseflag:
-            print(self.result)
-        return self.result;
+    def buildSpecimenFactors(self, cache):
+        """
+        Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
+        """
+        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
+        try:
+            text = requests.get(url).json()
+        except requests.exceptions.RequestException as e:
+            print('In buildspecimenfactors')
+            print(e)
+            exit()
+        factorPath = os.path.join(cache, 'specimenFactors.txt')
+        with open(factorPath, 'w') as outfile:
+            json.dump(text, outfile)
+        res = text['msg']
+
+        self.specimenFactors['id'] = [r['id'] for r in res]
+        self.specimenFactors['name'] = [r['name'] for r in res]
+        self.specimenFactors['race'] = [r['race_only'] for r in res]
+        self.specimenFactors['gender'] = [r['sex'] for r in res]
+        self.specimenFactors['age'] = [r['age']['days']/365 for r in res]
+
+
+    def readSpecimenFactors(self, cache):
+        """
+        Read various factors such as age, name, race, gender of the six specimens from disk.
+        """
+        fileName = os.path.join(cache, 'specimenFactors.txt')
+        if not os.path.exists(fileName):
+            self.buildSpecimenFactors(cache)
+        f = open(fileName, "r")
+        content = json.load(f)
+        f.close()
+        res = content['msg']
+        self.specimenFactors = dict()
+        self.specimenFactors['id'] = [r['id'] for r in res]
+        self.specimenFactors['name'] = [r['name'] for r in res]
+        self.specimenFactors['race'] = [r['race_only'] for r in res]
+        self.specimenFactors['gender'] = [r['sex'] for r in res]
+        self.specimenFactors['age'] = [r['age']['days']/365 for r in res]
