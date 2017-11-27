@@ -243,25 +243,22 @@ class Analysis:
         """
         Set the region of interest from the downloaded nii files
         """
-        for i in range(0, len(self.apidata['specimenInfo'])):
-            revisedApiDataCombo = dict()
-            revisedApiData = self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i]) #Maybe an index will work instead of expressionspmcorrelation
-            revisedApiDataCombo['zscores'] = revisedApiData['zscores'][:]
-            revisedApiDataCombo['coords'] = revisedApiData['coords'][:]
-            revisedApiDataCombo['samples'] = revisedApiData['samples'][:]
-            revisedApiDataCombo['probes'] = revisedApiData['probes'][:]
-            revisedApiDataCombo['specimen'] = revisedApiData['specimen']
-            if index == 0:
-                revisedApiDataCombo['name'] = 'img1'
-            elif index == 1:
-                revisedApiDataCombo['name'] = 'img2'
-            else:
-                print('only 0 and 1 are valid choices')
-                exit()
-            if self.verboseflag:
-                print('extractexplevel img1: ',revisedApiDataCombo['specimen'],' ',len(revisedApiDataCombo['coords']))
-            self.main_r.append(revisedApiDataCombo)
 
+        for i in range(0, len(self.apidata['specimenInfo'])):
+            revisedApiData = self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) #Maybe an index will work instead of expressionspmcorrelation
+            if self.verboseflag:
+                print('extractexplevel img1: ',revisedApiData['specimen'],' ',len(revisedApiData['coords']))
+            self.main_r.append(revisedApiData)
+        '''
+        self.main_rd = [self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) for i in range(len(self.apidata['specimenInfo']))]
+        for i in range(len(self.main_r)):
+            if np.equal(np.array(self.main_r[i]['zscores']).all(), np.array(self.main_rd[i]['zscores']).all()):
+                print('same')
+            if self.main_r[i]['name'] == self.main_rd[i]['name']:
+                print('same')
+        print(type(self.main_r), type(self.main_rd))
+        exit()
+        '''
     def queryapi(self, donorId):
         #url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         #for p in self.probeids:
@@ -321,11 +318,18 @@ class Analysis:
 
 
 
-    def expressionSpmCorrelation(self, img, apidataind, specimen):
+    def expressionSpmCorrelation(self, img, apidataind, specimen, index):
         """
         Create internal data structures with valid coordinates in MNI152 space corresponding to the regions of interest
-        """
-        revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen'])
+        """       
+        revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen', 'name'])
+        if index == 0:
+            revisedApiData['name'] = 'img1'
+        elif index == 1:
+            revisedApiData['name'] = 'img2'
+        else:
+            print('only 0 and 1 are valid choices')
+            exit()
         revisedApiData['zscores'] = []
         revisedApiData['coords'] = []
         revisedApiData['samples'] = []
