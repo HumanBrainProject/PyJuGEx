@@ -243,22 +243,9 @@ class Analysis:
         """
         Set the region of interest from the downloaded nii files
         """
-
         for i in range(0, len(self.apidata['specimenInfo'])):
-            revisedApiData = self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) #Maybe an index will work instead of expressionspmcorrelation
-            if self.verboseflag:
-                print('extractexplevel img1: ',revisedApiData['specimen'],' ',len(revisedApiData['coords']))
-            self.main_r.append(revisedApiData)
-        '''
-        self.main_rd = [self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) for i in range(len(self.apidata['specimenInfo']))]
-        for i in range(len(self.main_r)):
-            if np.equal(np.array(self.main_r[i]['zscores']).all(), np.array(self.main_rd[i]['zscores']).all()):
-                print('same')
-            if self.main_r[i]['name'] == self.main_rd[i]['name']:
-                print('same')
-        print(type(self.main_r), type(self.main_rd))
-        exit()
-        '''
+            self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
+
     def queryapi(self, donorId):
         #url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         #for p in self.probeids:
@@ -285,13 +272,6 @@ class Analysis:
             os.makedirs(donorPath)
         nsamples = len(data['samples'])
         nprobes = len(data['probes'])
-
-        '''
-        zscores = np.zeros((nsamples, nprobes))
-        for i in range(0, nprobes):
-            for j in range(0, nsamples):
-                zscores[j][i] = data['probes'][i]['z-score'][j]
-        '''
 
         zscores = np.zeros((nsamples, nprobes))
         zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(nprobes)] for j in range(nsamples)])
@@ -351,7 +331,6 @@ class Analysis:
             coord = coords[i]
             sum = (coord > 0).sum()
             if sum == 3:
-#                revisedApiData['zscores'] = revisedApiData['zscores']apidataind['zscores'][i][:]
                 revisedApiData['zscores'].append(apidataind['zscores'][i])
                 revisedApiData['coords'].append(coord)
         revisedApiData['samples'] = apidataind['samples'][:]
