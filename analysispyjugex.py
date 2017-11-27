@@ -243,15 +243,13 @@ class Analysis:
         """
         Set the region of interest from the downloaded nii files
         """
+        if index < 0 or index > 1:
+            print('only 0 and 1 are valid choices')
+            exit()
         for i in range(0, len(self.apidata['specimenInfo'])):
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
 
     def queryapi(self, donorId):
-        #url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        #for p in self.probeids:
-            #url += p+","
-        #dup = ''.join(p+"," for p in self.probeids)
-        #urldup = url+dup
         main = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         end = ''.join(p+"," for p in self.probeids)
         url = main + end
@@ -273,7 +271,6 @@ class Analysis:
         nsamples = len(data['samples'])
         nprobes = len(data['probes'])
 
-        zscores = np.zeros((nsamples, nprobes))
         zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(nprobes)] for j in range(nsamples)])
 
         fileName = os.path.join(donorPath, 'zscores.txt')
@@ -303,36 +300,18 @@ class Analysis:
         Create internal data structures with valid coordinates in MNI152 space corresponding to the regions of interest
         """       
         revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen', 'name'])
-        if index == 0:
-            revisedApiData['name'] = 'img1'
-        elif index == 1:
-            revisedApiData['name'] = 'img2'
-        else:
-            print('only 0 and 1 are valid choices')
-            exit()
-        revisedApiData['zscores'] = []
-        revisedApiData['coords'] = []
-        revisedApiData['samples'] = []
-        revisedApiData['probes'] = []
-        revisedApiData['specimen'] = []
+        revisedApiData['name'] = 'img'+str(index+1)
         dataImg = img.get_data()
         imgMni = img.affine
         invimgMni = inv(imgMni)
         Mni = specimen['alignment3d']
         T = np.dot(invimgMni, Mni)
         coords = transformSamples(apidataind['samples'], T)
-        coords = np.rint(coords)       
-        for i in range(0, len(coords)):
-            coord = coords[i]
-            sum = (coord > 0).sum()
-            if sum != 3 or dataImg[int(coord[0]), int(coord[1]), int(coord[2])] <= self.mapthreshold or dataImg[int(coord[0]),int(coord[1]),int(coord[2])] == 0:
-                coords[i] = [-1, -1, -1]
-        for i in range(0, len(coords)):
-            coord = coords[i]
-            sum = (coord > 0).sum()
-            if sum == 3:
-                revisedApiData['zscores'].append(apidataind['zscores'][i])
-                revisedApiData['coords'].append(coord)
+        coords = (np.rint(coords)).astype(int)
+        #How to use numpy.where
+        coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or dataImg[coord[0],coord[1],coord[2]] <= self.mapthreshold or dataImg[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
+        revisedApiData['coords'] = [c for c in coords if (c > 0).sum() == 3]
+        revisedApiData['zscores'] = [z for (c, z) in zip(coords, apidataind['zscores']) if (c > 0).sum() == 3]
         revisedApiData['samples'] = apidataind['samples'][:]
         revisedApiData['probes'] = apidataind['probes'][:]
         revisedApiData['specimen'] = specimen['name']
