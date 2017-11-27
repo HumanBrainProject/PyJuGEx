@@ -17,19 +17,7 @@ import requests, requests.exceptions
 import pandas as pd
 import shutil
 
-def getmeanzscores(gene_symbols, combined_zscores, area1len, area2len):
-    """
-    Compute Winsorzed mean of zscores over all genes.
-    """
-    unique_gene_symbols = np.unique(gene_symbols)
-    indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
-    winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
-    res = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
-    res['uniqueId'] = unique_gene_symbols
-    res['combined_zscores'] = winsorzed_mean_zscores
-    res['area1_zscores'] = winsorzed_mean_zscores[0:area1len]
-    res['area2_zscores'] = winsorzed_mean_zscores[area1len:]
-    return res
+
 
 def getSpecimenData(info):
     """
@@ -132,9 +120,12 @@ class Analysis:
         self.vois = []
         self.main_r = []
         self.mapthreshold = 0.2
+        self.n_rep = 1000
         self.result = None
         self.cache = gene_cache
         self.verboseflag = verbose
+        self.anova_data = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
+        self.all_probe_data = dict.fromkeys(['uniqueId', 'combined_zscores', 'area1_zscores', 'area2_zscores'])
         self.probepath = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
         if os.path.exists(self.cache) and not os.path.exists(self.probepath):
             shutil.rmtree(self.cache, ignore_errors = False)
@@ -155,7 +146,7 @@ class Analysis:
         self.set_ROI_MNI152(roi2, 1)
         self.cleanup()
         print('Starting the analysis. This may take some time.....')
-        self.run()
+        self.performAnova()
         result = self.pvalues()
         return result
 
@@ -446,109 +437,87 @@ class Analysis:
             self.readCachedApiSpecimenData()
 
 
-    def run(self):
-        self.performAnova()
+    def getmeanzscores(self, gene_symbols, combined_zscores, area1len, area2len):
+        """
+        Compute Winsorzed mean of zscores over all genes.
+        """
+        unique_gene_symbols = np.unique(gene_symbols)
+        indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
+        winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
+        self.all_probe_data['uniqueId'] = unique_gene_symbols
+        self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
+        self.all_probe_data['area1_zscores'] = winsorzed_mean_zscores[0:area1len]
+        self.all_probe_data['area2_zscores'] = winsorzed_mean_zscores[area1len:]
+        #return res
+
+    def initialize(self):
+        combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
+        specimenFactors = readSpecimenFactors(self.cache)
+        if self.verboseflag:
+            print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
+        self.getmeanzscores(self.genesymbols, combined_zscores, len([r['name'] for r in self.main_r if r['name'] == 'img1']), len([r['name'] for r in self.main_r if r['name'] == 'img2']))
+        st = set(self.genesymbols)
+        self.geneIds = [self.genesymbols[self.genesymbols.index(a)] if a in st else [self.genesymbols[0]] for ind, a in enumerate(self.all_probe_data['uniqueId'])]
+        self.n_genes = len(self.all_probe_data['combined_zscores'][0])
+        self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
+        self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
+        st = set(specimenFactors['name'])
+        self.anova_data['Age'] = [specimenFactors['age'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['age'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
+        self.anova_data['Race'] = [specimenFactors['race'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['race'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
+        if self.verboseflag:
+            print('race')
+            print(self.anova_data['Race'])
+            print('age')
+            print(self.anova_data['Age'])
+            print(len(self.genelist))
+
+    def first_iteration(self):
+        self.F_vec_ref_anovan = np.zeros(self.n_genes)
+        for i in range(0, self.n_genes):
+            self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,i]
+            mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
+            aov_table = sm.stats.anova_lm(mod, typ=1)
+            if self.verboseflag:
+                print(aov_table)
+            self.F_vec_ref_anovan[i] = aov_table['F'][0]
+
+    def fwe_correction(self):
+        invn_rep = 1/self.n_rep
+        self.FWE_corrected_p = np.zeros(self.n_genes)
+        self.F_mat_perm_anovan = np.zeros((self.n_rep, self.n_genes))
+        self.F_mat_perm_anovan[0] = self.F_vec_ref_anovan
+        self.F_vec_perm_anovan = np.zeros(self.n_genes)
+        for rep in range(1, self.n_rep):
+            for j in range(0, self.n_genes):
+                shuffle = np.random.permutation(self.anova_data['Area'])
+                self.anova_data['Area'] = shuffle
+                self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,j]
+                mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
+                aov_table = sm.stats.anova_lm(mod, typ=1)
+                self.F_vec_perm_anovan[j] = aov_table['F'][0]
+            self.F_mat_perm_anovan[rep] = self.F_vec_perm_anovan
+        self.accumulate_result()
+
+    def accumulate_result(self):
+        invn_rep = 1/self.n_rep
+        ref = self.F_mat_perm_anovan.max(1)
+        for i in range(0, self.n_genes):
+            val = self.F_vec_ref_anovan[i]
+            sum = len([1 for a in ref if a >= val])
+            if sys.version_info[0] < 3:
+                self.FWE_corrected_p[i] = sum*invn_rep
+            else:
+                self.FWE_corrected_p[i] = sum/self.n_rep
+        self.result = dict(zip(self.geneIds, self.FWE_corrected_p))
 
     def performAnova(self):
         """
         Perform one way anova on zscores as the dependent variable and specimen factors such as age, race, name and area
         as independent variables
         """
-        combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
-        specimenFactors = readSpecimenFactors(self.cache)
-        if self.verboseflag:
-            print("number of specimens ", len(specimenFactors), " name: ", len(specimenFactors['name']))
-        allProbeData = getmeanzscores(self.genesymbols, combined_zscores, len([r['name'] for r in self.main_r if r['name'] == 'img1']), len([r['name'] for r in self.main_r if r['name'] == 'img2']))
-        uniqueId = np.copy(allProbeData['uniqueId'])
-        geneIds = []
-        st = set(self.genesymbols)
-        for ind, a in enumerate(allProbeData['uniqueId']):
-            index = 0
-            if a in st:
-                index = self.genesymbols.index(a)
-            geneIds = geneIds + [self.genesymbols[index]]
-
-        n_genes = len(allProbeData['combined_zscores'][0]) #SHOULD NOT THIS BE 285???
-        Reference_Anovan_p = np.zeros(n_genes)
-        Reference_Anovan_eta2 = np.zeros(n_genes)
-        Reference_Anovan_CI_l = np.zeros(n_genes)
-        Reference_Anovan_CI_h = np.zeros(n_genes)
-        Reference_Anovan_diff_mean = np.zeros(n_genes)
-        F_vec_ref_anovan = np.zeros(n_genes)
-        data = {}
-        data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
-        data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
-        st = set(specimenFactors['name'])
-        data['Age'] = [specimenFactors['age'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['age'][0]] for ind, a in enumerate(data['Specimen'])]
-        data['Race'] = [specimenFactors['race'][specimenFactors['name'].index(a)] if a in st else [specimenFactors['race'][0]] for ind, a in enumerate(data['Specimen'])]
-        if self.verboseflag:
-            print('race')
-            print(data['Race'])
-            print('age')
-            print(data['Age'])
-            print(len(self.genelist))
-        for i in range(0, n_genes):
-            data['Zscores'] = allProbeData['combined_zscores'][:,i]
-            mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
-            aov_table = sm.stats.anova_lm(mod, typ=1)
-            if self.verboseflag:
-                print(aov_table)
-            F_vec_ref_anovan[i] = aov_table['F'][0]
-            ss_total = aov_table['sum_sq'][0]+aov_table['sum_sq'][1]+aov_table['sum_sq'][4]
-            ss_between_group_area =  aov_table['sum_sq'][0]
-            Reference_Anovan_eta2[i] = ss_between_group_area/ss_total
-            var1 = []
-            var2 = []
-            row = allProbeData['combined_zscores'][:,i]
-            var1 = var1 + [allProbeData['combined_zscores'][j][i] for j in range(0, len(row)) if data['Area'][j] == 'img1']
-            var2 = var2 + [allProbeData['combined_zscores'][j][i] for j in range(0, len(row)) if data['Area'][j] == 'img2']
-            mse = (np.var(var1, ddof=1) + np.var(var2, ddof=1))*0.5
-            sm1m2 = 2.011*sqrt((2*mse)/n_genes)
-            mean1 = np.mean(var1)
-            mean2 = np.mean(var2)
-            v = mean1 - mean2
-            Reference_Anovan_CI_l[i] = v - sm1m2
-            Reference_Anovan_CI_h[i] = v + sm1m2
-            Reference_Anovan_diff_mean[i] = v
-            Reference_Anovan_p[i] = aov_table['PR(>F)'][0] #p(1)
-
-        n_rep = 1000
-        invn_rep = 1/n_rep
-        FWE_corrected_p = np.zeros(n_genes)
-        F_mat_perm_anovan = np.zeros((n_rep, n_genes))
-        p_mat_perm_anovan = np.zeros((n_rep, n_genes))
-        F_mat_perm_anovan[0] = F_vec_ref_anovan
-        for rep in range(1, n_rep):
-            F_vec_perm_anovan = np.zeros(n_genes)
-            p_vec_perm_anovan = np.zeros(n_genes)
-            for j in range(0, n_genes):
-                shuffle = np.random.permutation(data['Area'])
-                data['Area'] = shuffle
-                data['Zscores'] = allProbeData['combined_zscores'][:,j]
-                mod = ols('Zscores ~ Area + Specimen + Age + Race', data=data).fit()
-                aov_table = sm.stats.anova_lm(mod, typ=1)
-                F_vec_perm_anovan[j] = aov_table['F'][0]
-                p_vec_perm_anovan[j] = aov_table['PR(>F)'][0]
-            F_mat_perm_anovan[rep] = F_vec_perm_anovan
-            p_mat_perm_anovan[rep] = p_vec_perm_anovan
-
-        ref = F_mat_perm_anovan.max(1)
-        Uncorrected_permuted_p = np.zeros(n_genes)
-
-        for j in range(0, n_genes):
-            val = F_vec_ref_anovan[j]
-            list1 = F_mat_perm_anovan[:,j]
-            sum = len([1 for a in list1 if a >= val])
-            if sys.version_info[0] < 3:
-                Uncorrected_permuted_p[j] = sum*invn_rep
-            else:
-                Uncorrected_permuted_p[j] = sum/n_rep #Otherwise gives one additional gene, SST
-            sum = len([1 for a in ref if a >= val])
-            if sys.version_info[0] < 3:
-                FWE_corrected_p[j] = sum*invn_rep
-            else:
-                FWE_corrected_p[j] = sum/n_rep
-        self.result = dict(zip(geneIds, FWE_corrected_p))
+        self.initialize()
+        self.first_iteration()
+        self.fwe_correction()
 
     def pvalues(self):
         if self.verboseflag:
