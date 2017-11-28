@@ -16,7 +16,7 @@ import sys
 import requests, requests.exceptions
 import pandas as pd
 import shutil
-
+import cProfile
 
 def getSpecimenData(info):
     """
@@ -134,9 +134,7 @@ class Analysis:
                 print('In retreiveprobeids')
                 print(e)
                 connection = True
-
             data = xmltodict.parse(response.text)
-
             self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if g in self.downloadgenelist]
             self.genesymbols = self.genesymbols + [g for d in data['Response']['probes']['probe']]
 
@@ -152,36 +150,28 @@ class Analysis:
         #self.downloadspecimens()
         for d in self.donorids:
             donorpath = os.path.join(self.cache, d)
-            fileNameM = os.path.join(donorpath, 'specimenMat.txt')
-            mat = np.loadtxt(fileNameM)
-            fileNameN = os.path.join(donorpath, 'specimenName.txt')
-            f = open(fileNameN, 'r')
-            name = f.read()
-            f.close()
             specimen = dict.fromkeys(['name', 'alignment3d'])
-            specimen['name'] = name
-            specimen['alignment3d'] = mat
+            with open(os.path.join(donorpath, 'specimenMat.txt'), 'r') as f:
+                specimen['alignment3d'] = np.loadtxt(f)
+            with open(os.path.join(donorpath, 'specimenName.txt'), 'r') as f:
+                specimen['name'] = f.read()
             self.apidata['specimenInfo'].append(specimen)
+
             #LOAD SAMPLES
-            fileName = os.path.join(donorpath, 'samples.txt')
-            f = open(fileName, "r")
-            samplesC = json.load(f)
-            f.close()
+            with open(os.path.join(donorpath, 'samples.txt'), 'r') as f:
+                samplesC = json.load(f)
             #LOAD PROBES
-            fileName = os.path.join(donorpath, 'probes.txt')
-            f = open(fileName, "r")
-            probesC = json.load(f)
-            f.close()
+            with open(os.path.join(donorpath, 'probes.txt'), 'r') as f:
+                probesC = json.load(f)
             #LOAD ZSCORES
-            fileName = os.path.join(donorpath, 'zscores.txt')
-            zscoresC = np.loadtxt(fileName)
-            apiDataC = dict()
-            apiDataC['samples'] = samplesC
-            apiDataC['probes'] = probesC
-            apiDataC['zscores'] = zscoresC
-            self.apidata['apiinfo'].append(apiDataC)
+            with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
+                zscoresC = np.loadtxt(f)
+
+            #self.apidata['apiinfo'].append({'samples' : samplesC, 'probes' : probesC, 'zscores' : zscoresC})
+
+            self.apidata['apiinfo'] = self.apidata['apiinfo']  + [{'samples' : samplesC, 'probes' : probesC, 'zscores' : zscoresC}]
             if self.verboseflag:
-                print('inside readcachedata ',len(apiDataC['samples']), ' ', apiDataC['zscores'].shape, ' ', len(apiDataC['probes']))
+                print('inside readcachedata ',len(self.apidata['apiinfo'][-1]['samples']), ' ', self.apidata['apiinfo'][-1]['zscores'].shape, ' ', len(self.apidata['apiinfo'][-1]['probes']))
 
     def set_ROI_MNI152(self, voi, index):
         """
@@ -195,9 +185,10 @@ class Analysis:
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
 
     def queryapi(self, donorId):
-        main = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        end = ''.join(p+"," for p in self.probeids)
-        url = main + end
+        """
+        Query Allen Brain Api for given set of genes
+        """
+        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in" + ''.join(p+"," for p in self.probeids)
         url = url[:-1]
         url += "][donors$eq"+donorId+"]"
         try:
@@ -213,32 +204,19 @@ class Analysis:
         donorPath = os.path.join(self.cache, donorId)
         if not os.path.exists(donorPath):
             os.makedirs(donorPath)
-        nsamples = len(data['samples'])
-        nprobes = len(data['probes'])
 
-        zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(nprobes)] for j in range(nsamples)])
+        zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(len(data['probes']))] for j in range(len(data['samples']))])
 
-        fileName = os.path.join(donorPath, 'zscores.txt')
-        with open(fileName, 'wb') as f:
+        with open(os.path.join(donorPath, 'zscores.txt'), 'wb') as f:
             np.savetxt(f, zscores, fmt = '%.5f')
-
-        fileName = os.path.join(donorPath, 'samples.txt')
-        with open(fileName, 'w') as outfile:
+        with open(os.path.join(donorPath, 'samples.txt'), 'w') as outfile:
             json.dump(data['samples'], outfile)
-
-        fileName = os.path.join(donorPath, 'probes.txt')
-        with open(fileName, 'w') as outfile:
+        with open(os.path.join(donorPath, 'probes.txt'), 'w') as outfile:
             json.dump(data['probes'], outfile)
 
-        apiData = dict()
-        apiData['samples'] = data['samples']
-        apiData['probes'] = data['probes']
-        apiData['zscores'] = zscores
         if self.verboseflag:
-            print('For ',donorId,' samples_length: ',len(apiData['samples']),' probes_length: ',len(apiData['probes']),' zscores_shape: ',apiData['zscores'].shape)
-        return apiData
-
-
+            print('For ',donorId,' samples_length: ',len(data['samples']),' probes_length: ',len(data['probes']),' zscores_shape: ',zscores.shape)
+        return {'samples' : data['samples'], 'probes' : data['probes'], 'zscores' : zscores}
 
     def expressionSpmCorrelation(self, img, apidataind, specimen, index):
         """
@@ -247,75 +225,59 @@ class Analysis:
         revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen', 'name'])
         revisedApiData['name'] = 'img'+str(index+1)
         dataImg = img.get_data()
-        imgMni = img.affine
-        invimgMni = inv(imgMni)
-        Mni = specimen['alignment3d']
-        T = np.dot(invimgMni, Mni)
+        invimgMni = inv(img.affine)
+        T = np.dot(invimgMni, specimen['alignment3d'])
         coords = transformSamples(apidataind['samples'], T)
         coords = (np.rint(coords)).astype(int)
         #How to use numpy.where
         coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or dataImg[coord[0],coord[1],coord[2]] <= self.mapthreshold or dataImg[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
         revisedApiData['coords'] = [c for c in coords if (c > 0).sum() == 3]
         revisedApiData['zscores'] = [z for (c, z) in zip(coords, apidataind['zscores']) if (c > 0).sum() == 3]
-        revisedApiData['samples'] = apidataind['samples'][:]
-        revisedApiData['probes'] = apidataind['probes'][:]
+        revisedApiData['samples'] = apidataind['samples']
+        revisedApiData['probes'] = apidataind['probes']
         revisedApiData['specimen'] = specimen['name']
         return revisedApiData
 
 
-
     def queryapipartial(self, donorId):
         """
-        Query Allen Brain Api for the given set of genes
+        Query Allen Brain Api for the given set of genes if they have not already been downloaded to genecache
         """
-        main = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        end = ''.join(p+"," for p in self.probeids)
-        url = main + end
+        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in" + ''.join(p+"," for p in self.probeids)
         url = url[:-1]
         url += "][donors$eq"+donorId+"]"
         if self.verboseflag:
             print(url)
         try:
-            response = requests.get(url)
             text = requests.get(url).json()
         except requests.exceptions.RequestException as e:
             print('In queryapipartial ')
             print(e)
             exit()
         data = text['msg']
-        samples = []
-        probes = []
-
         if not os.path.exists(self.cache):
             os.makedirs(self.cache)
         donorpath = os.path.join(self.cache, donorId)
         if not os.path.exists(donorpath):
             os.makedirs(donorpath)
-        nsamples = len(data['samples'])
-        nprobes = len(data['probes'])
-        samples = data['samples']
         probes = data['probes']
-
-        zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(nprobes)] for j in range(nsamples)])
-        #LOAD PROBES
-        fileName = os.path.join(donorpath, 'probes.txt')
-        f = open(fileName, "r")
-        probesC = json.load(f)
-        f.close()
-        #LOAD ZSCORES
-        fileName = os.path.join(donorpath, 'zscores.txt')
-        zscoresC = np.loadtxt(fileName)
-
-        fileName = os.path.join(donorpath, 'samples.txt')
-        with open(fileName, 'w') as outfile:
-            json.dump(samples, outfile)
-        probes = probesC + probes
-        fileName = os.path.join(donorpath, 'probes.txt')
-        with open(fileName, 'w') as outfile:
+        zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(len(data['probes']))] for j in range(len(data['samples']))])
+        #READ PROBES
+        with open(os.path.join(donorpath, 'probes.txt'), 'r') as f:
+            probesC = json.load(f)
+        #READ ZSCORES
+        with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
+            zscoresC = np.loadtxt(f)
+        #WRITE SAMPLES
+        with open(os.path.join(donorpath, 'samples.txt'), 'w') as outfile:
+            json.dump(data['samples'], outfile)
+        #READ AND WRITE PROBES
+        probes = probesC + probes       
+        with open(os.path.join(donorpath, 'probes.txt'), 'w') as outfile:
             json.dump(probes, outfile)
-        zscores = np.append(zscoresC, zscores, axis=1)
-        filename = os.path.join(donorpath, 'zscores.txt')
-        np.savetxt(filename, zscores)
+        #WRITE ZSCORES
+        zscores = np.append(zscoresC, zscores, axis=1)      
+        np.savetxt(os.path.join(donorpath, 'zscores.txt'), zscores)
 
     def downloadspecimens(self):
         """
@@ -324,35 +286,31 @@ class Analysis:
         """
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
         self.apidata['specimenInfo'] = []
-        for i in range(0, len(specimens)):
-            url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"+specimens[i]+"']&include=alignment3d"
+        for s in specimens:
+            url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"+s+"']&include=alignment3d"
             if self.verboseflag:
-                print(url)    
+                print(url)
             try:
                 text = requests.get(url).json()
             except requests.exceptions.RequestException as e:
                 print('In downloadspecimens ')
                 print(e)
                 exit()
-            data = text['msg'][0]
-            res = getSpecimenData(data)
-            self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [res]
+            self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [getSpecimenData(text['msg'][0])]
         if self.verboseflag:
             print(self.apidata['specimenInfo'])
-        for i in range(0, len(self.donorids)):
-            factorPath = os.path.join(self.cache, self.donorids[i]+'/specimenName.txt')
-            with open(factorPath, 'w') as outfile:
-                outfile.write(self.apidata['specimenInfo'][i]['name'])
-            factorPath = os.path.join(self.cache, self.donorids[i]+'/specimenMat.txt')
-            np.savetxt(factorPath, self.apidata['specimenInfo'][i]['alignment3d'])
+
+        for d, s in zip(self.donorids, self.apidata['specimenInfo']):
+            with open(os.path.join(self.cache, d+'/specimenName.txt'), 'w') as outfile:
+                outfile.write(s['name'])
+            np.savetxt(os.path.join(self.cache, d+'/specimenMat.txt'), s['alignment3d'])
+
 
     def getapidata(self):
         """
         Loop through the donors and call queryapi() and populate apidata
         """
-        self.apidata['apiinfo'] = []
-        for i in range(0, len(self.donorids)):
-            self.apidata['apiinfo'] = self.apidata['apiinfo'] + [self.queryapi(self.donorids[i])]
+        self.apidata['apiinfo'] = [self.queryapi(d) for d in self.donorids]
 
     def download_and_retrieve_gene_data(self):
         """
@@ -366,27 +324,24 @@ class Analysis:
         Set list of genes and prepare to read/download data for them.
         """
         self.genelist = genelist
-        self.downloadgenelist = self.genelist[:]
-        donorpath = os.path.join(self.cache, self.donorids[0])
-        donorprobe = os.path.join(donorpath, 'probes.txt')
+        donorprobe = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
         if not os.path.exists(self.cache):
+            self.downloadgenelist = self.genelist[:]
             if self.verboseflag:
                 print('self.cache does not exist')
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
             self.creategenecache()
-            for k, v in self.genecache.items():
-                if k in self.genelist:
-                    self.downloadgenelist.remove(k)            
+            self.downloadgenelist = [k for k in self.genelist if k not in self.genecache.keys()]
             if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
             if self.verboseflag:
                 print(self.downloadgenelist)
             self.retrieveprobeids()
             if self.downloadgenelist:
-                for i in range(0, len(self.donorids)):
-                    self.queryapipartial(self.donorids[i])
+                for d in self.donorids:
+                    self.queryapipartial(d)
             self.readCachedApiSpecimenData()
 
 
@@ -401,10 +356,14 @@ class Analysis:
         self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
 
     def initialize(self):
+        """
+        Prepare self.anova_data. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_data
+        """
         combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
         self.readSpecimenFactors(self.cache)
         if self.verboseflag:
-            print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))
+            print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
+
         self.getmeanzscores(self.genesymbols, combined_zscores, len([r['name'] for r in self.main_r if r['name'] == 'img1']), len([r['name'] for r in self.main_r if r['name'] == 'img2']))
         st = set(self.genesymbols)
         self.geneIds = [self.genesymbols[self.genesymbols.index(a)] if a in st else [self.genesymbols[0]] for ind, a in enumerate(self.all_probe_data['uniqueId'])]
@@ -422,6 +381,9 @@ class Analysis:
             print(len(self.genelist))
 
     def first_iteration(self):
+        """
+        Perform one iteration of ANOVA. Use output of this to populate F_vec_ref_anovan which becomes initial estimate of n_rep passes of FWE.
+        """
         self.F_vec_ref_anovan = np.zeros(self.n_genes)
         for i in range(0, self.n_genes):
             self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,i]
@@ -432,6 +394,9 @@ class Analysis:
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
 
     def fwe_correction(self):
+        """
+        Perform n_rep passes of FWE
+        """
         invn_rep = 1/self.n_rep
         self.FWE_corrected_p = np.zeros(self.n_genes)
         self.F_mat_perm_anovan = np.zeros((self.n_rep, self.n_genes))
@@ -449,6 +414,9 @@ class Analysis:
         self.accumulate_result()
 
     def accumulate_result(self):
+        """
+        Populate pvalues and geneids for the result dict after n_rep passes of FWE
+        """
         invn_rep = 1/self.n_rep
         ref = self.F_mat_perm_anovan.max(1)
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
