@@ -134,9 +134,7 @@ class Analysis:
                 print('In retreiveprobeids')
                 print(e)
                 connection = True
-
             data = xmltodict.parse(response.text)
-
             self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if g in self.downloadgenelist]
             self.genesymbols = self.genesymbols + [g for d in data['Response']['probes']['probe']]
 
@@ -175,7 +173,7 @@ class Analysis:
             #LOAD ZSCORES
             fileName = os.path.join(donorpath, 'zscores.txt')
             zscoresC = np.loadtxt(fileName)
-            apiDataC = dict()
+            apiDataC = {}
             apiDataC['samples'] = samplesC
             apiDataC['probes'] = probesC
             apiDataC['zscores'] = zscoresC
@@ -398,10 +396,14 @@ class Analysis:
         self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
 
     def initialize(self):
+        """
+        Prepare self.anova_data. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_data
+        """
         combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
         self.readSpecimenFactors(self.cache)
         if self.verboseflag:
-            print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))
+            print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
+
         self.getmeanzscores(self.genesymbols, combined_zscores, len([r['name'] for r in self.main_r if r['name'] == 'img1']), len([r['name'] for r in self.main_r if r['name'] == 'img2']))
         st = set(self.genesymbols)
         self.geneIds = [self.genesymbols[self.genesymbols.index(a)] if a in st else [self.genesymbols[0]] for ind, a in enumerate(self.all_probe_data['uniqueId'])]
@@ -419,6 +421,9 @@ class Analysis:
             print(len(self.genelist))
 
     def first_iteration(self):
+        """
+        Perform one iteration of ANOVA. Use output of this to populate F_vec_ref_anovan which becomes initial estimate of n_rep passes of FWE.
+        """
         self.F_vec_ref_anovan = np.zeros(self.n_genes)
         for i in range(0, self.n_genes):
             self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,i]
@@ -429,6 +434,9 @@ class Analysis:
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
 
     def fwe_correction(self):
+        """
+        Perform n_rep passes of FWE
+        """
         invn_rep = 1/self.n_rep
         self.FWE_corrected_p = np.zeros(self.n_genes)
         self.F_mat_perm_anovan = np.zeros((self.n_rep, self.n_genes))
@@ -446,6 +454,9 @@ class Analysis:
         self.accumulate_result()
 
     def accumulate_result(self):
+        """
+        Populate pvalues and geneids for the result dict after n_rep passes of FWE
+        """
         invn_rep = 1/self.n_rep
         ref = self.F_mat_perm_anovan.max(1)
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
