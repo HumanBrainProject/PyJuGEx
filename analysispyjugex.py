@@ -16,7 +16,7 @@ import sys
 import requests, requests.exceptions
 import pandas as pd
 import shutil
-
+import cProfile
 
 def getSpecimenData(info):
     """
@@ -366,27 +366,24 @@ class Analysis:
         Set list of genes and prepare to read/download data for them.
         """
         self.genelist = genelist
-        self.downloadgenelist = self.genelist[:]
-        donorpath = os.path.join(self.cache, self.donorids[0])
-        donorprobe = os.path.join(donorpath, 'probes.txt')
+        donorprobe = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
         if not os.path.exists(self.cache):
+            self.downloadgenelist = self.genelist[:]
             if self.verboseflag:
                 print('self.cache does not exist')
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
             self.creategenecache()
-            for k, v in self.genecache.items():
-                if k in self.genelist:
-                    self.downloadgenelist.remove(k)            
+            self.downloadgenelist = [k for k in self.genelist if k not in self.genecache.keys()]
             if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
             if self.verboseflag:
                 print(self.downloadgenelist)
             self.retrieveprobeids()
             if self.downloadgenelist:
-                for i in range(0, len(self.donorids)):
-                    self.queryapipartial(self.donorids[i])
+                for d in self.donorids:
+                    self.queryapipartial(d)
             self.readCachedApiSpecimenData()
 
 
