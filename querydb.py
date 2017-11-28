@@ -6,7 +6,9 @@ import sys
 
 class querydb:
     def __init__(self):
-        self.conn = Connection(arangoURL='http://cudaws02.ime.kfa-juelich.de:8529', username="haimasree", password="haimasree123")
+        with open('config.json', 'r') as fp:
+            configvals = json.load(fp)
+        self.conn = Connection(arangoURL=configvals['arangoURL'], username=configvals['username'], password=configvals['password'])
         self.db = self.conn["Metadata"]
         self.rois = self.db["rois"]
         with open('files/filteredJuBrainJsonmod.json') as file:
