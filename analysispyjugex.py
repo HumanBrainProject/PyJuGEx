@@ -155,7 +155,7 @@ class Analysis:
                 specimen['alignment3d'] = np.loadtxt(f)
             with open(os.path.join(donorpath, 'specimenName.txt'), 'r') as f:
                 specimen['name'] = f.read()
-            self.apidata['specimenInfo'].append(specimen)
+            self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [specimen]
 
             #LOAD SAMPLES
             with open(os.path.join(donorpath, 'samples.txt'), 'r') as f:
@@ -166,8 +166,6 @@ class Analysis:
             #LOAD ZSCORES
             with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
                 zscoresC = np.loadtxt(f)
-
-            #self.apidata['apiinfo'].append({'samples' : samplesC, 'probes' : probesC, 'zscores' : zscoresC})
 
             self.apidata['apiinfo'] = self.apidata['apiinfo']  + [{'samples' : samplesC, 'probes' : probesC, 'zscores' : zscoresC}]
             if self.verboseflag:
@@ -180,6 +178,7 @@ class Analysis:
         if index < 0 or index > 1:
             print('only 0 and 1 are valid choices')
             exit()
+#        self.main_r = [self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) for i in range(0, len(self.apidata['specimenInfo']))]
 
         for i in range(0, len(self.apidata['specimenInfo'])):
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
