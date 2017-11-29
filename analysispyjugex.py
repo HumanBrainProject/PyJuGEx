@@ -126,7 +126,8 @@ class Analysis:
 
     def creategenecache(self):
         """
-
+        Create a dictionary with an entry for each gene whose api information has been downloaded.
+        We scan self.cache/15496/probes.txt for the gene symbols
         """
         with open(os.path.join(self.cache, self.donorids[0]+'/probes.txt'), 'r') as f:
             probes = json.load(f)
@@ -137,9 +138,9 @@ class Analysis:
 
     def retrieveprobeids(self):
         """
-        Retrieve probe ids for the given gene lists
+        Retrieve probe ids for the given gene lists, update self.probeids which will be used by queryapi() or queryapipartial() to
+        form the url and update self.genesymbols to be used by getmeanzscores()
         """
-        connection = False
         if self.verboseflag:
             print('genelist ',self.genelist)
         for g in self.genelist:
@@ -151,7 +152,6 @@ class Analysis:
             except requests.exceptions.RequestException as e:
                 print('In retreiveprobeids')
                 print(e)
-                connection = True
             data = xmltodict.parse(response.text)
             self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if g in self.downloadgenelist]
             self.genesymbols = self.genesymbols + [g for d in data['Response']['probes']['probe']]
@@ -163,9 +163,8 @@ class Analysis:
 
     def readCachedApiSpecimenData(self):
         """
-        Read cached Allen Brain Api data from disk location
+        Read cached Allen Brain Api data from disk location and update self.apidata['specimenInfo'] and self.apidata['apiInfo']
         """
-        #self.downloadspecimens()
         for d in self.donorids:
             donorpath = os.path.join(self.cache, d)
             specimen = dict.fromkeys(['name', 'alignment3d'])
@@ -185,9 +184,9 @@ class Analysis:
             with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
                 zscoresC = np.loadtxt(f)
 
-            self.apidata['apiinfo'] = self.apidata['apiinfo']  + [{'samples' : samplesC, 'probes' : probesC, 'zscores' : zscoresC}]
+            self.apidata['apiinfo'] = self.apidata['apiinfo']  + [{'samples' : samplesC, 'zscores' : zscoresC}]
             if self.verboseflag:
-                print('inside readcachedata ',len(self.apidata['apiinfo'][-1]['samples']), ' ', self.apidata['apiinfo'][-1]['zscores'].shape, ' ', len(self.apidata['apiinfo'][-1]['probes']))
+                print('inside readcachedata ',len(self.apidata['apiinfo'][-1]['samples']), ' ', self.apidata['apiinfo'][-1]['zscores'].shape)
 
     def set_ROI_MNI152(self, voi, index):
         """
@@ -250,7 +249,6 @@ class Analysis:
         revisedApiData['coords'] = [c for c in coords if (c > 0).sum() == 3]
         revisedApiData['zscores'] = [z for (c, z) in zip(coords, apidataind['zscores']) if (c > 0).sum() == 3]
         revisedApiData['samples'] = apidataind['samples']
-        revisedApiData['probes'] = apidataind['probes']
         revisedApiData['specimen'] = specimen['name']
         return revisedApiData
 
