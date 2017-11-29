@@ -406,14 +406,13 @@ class Analysis:
             print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
         #Populates self.all_probe_data (uniqueid and zscores)
         self.getmeanzscores(combined_zscores)
+
         self.n_genes = len(self.all_probe_data['combined_zscores'][0])
         self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores']))]
-        #self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
         self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores']))]
-        #self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
         st = set(self.specimenFactors['name'])
-        self.anova_data['Age'] = [self.specimenFactors['age'][self.specimenFactors['name'].index(a)] if a in st else [self.specimenFactors['age'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
-        self.anova_data['Race'] = [self.specimenFactors['race'][self.specimenFactors['name'].index(a)] if a in st else [self.specimenFactors['race'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
+        self.anova_data['Age'] = [self.specimenFactors['age'][self.specimenFactors['name'].index(a)] for ind, a in enumerate(self.anova_data['Specimen'])]
+        self.anova_data['Race'] = [self.specimenFactors['race'][self.specimenFactors['name'].index(a)] for ind, a in enumerate(self.anova_data['Specimen'])]
         if self.verboseflag:
             print('race')
             print(self.anova_data['Race'])
