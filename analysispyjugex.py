@@ -235,9 +235,10 @@ class Analysis:
 
     def expressionSpmCorrelation(self, img, apidataind, specimen, index):
         """
-        Create internal data structures with valid coordinates in MNI152 space corresponding to the regions of interest
+        Create internal data structures with valid coordinates and corresponding zscores, specimen info
         """       
-        revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'probes', 'specimen', 'name'])
+        #revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'specimen', 'name'])
+        revisedApiData = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
         revisedApiData['name'] = 'img'+str(index+1)
         dataImg = img.get_data()
         invimgMni = inv(img.affine)
@@ -248,14 +249,14 @@ class Analysis:
         coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or dataImg[coord[0],coord[1],coord[2]] <= self.mapthreshold or dataImg[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
         revisedApiData['coords'] = [c for c in coords if (c > 0).sum() == 3]
         revisedApiData['zscores'] = [z for (c, z) in zip(coords, apidataind['zscores']) if (c > 0).sum() == 3]
-        revisedApiData['samples'] = apidataind['samples']
+        #revisedApiData['samples'] = apidataind['samples']
         revisedApiData['specimen'] = specimen['name']
         return revisedApiData
 
 
     def queryapipartial(self, donorId):
         """
-        Query Allen Brain Api for the given set of genes if they have not already been downloaded to genecache
+        Query Allen Brain Api for the given set of genes if they have not already been downloaded to genecache and save them on disk
         """
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in" + ''.join(p+"," for p in self.probeids)
         url = url[:-1]
@@ -295,7 +296,7 @@ class Analysis:
 
     def downloadspecimens(self):
         """
-        Downlaod names and alignment matrix for each specimen/donor from Allen Brain Api and save them on disk as specimenName.txt
+        Download names and transformation matrix for each specimen/donor from Allen Brain Api and save them on disk as specimenName.txt
         and specimenMat.txt respectively, load.
         """
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
@@ -328,7 +329,7 @@ class Analysis:
 
     def download_and_retrieve_gene_data(self):
         """
-        Download data from Allen Brain Api for the given set of genes and specimen information
+        Download data from Allen Brain Api for the given set of genes and specimen
         """
         self.getapidata()
         self.downloadspecimens()
@@ -339,6 +340,10 @@ class Analysis:
         """
         self.genelist = genelist
         donorprobe = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
+        """
+        If the cache doesnt exist then get all the probes associated with the genes and download and save the api and specimen information
+        and populate apidata['apiinfo'] and apidata['specimeninfo'].
+        """
         if not os.path.exists(self.cache):
             self.downloadgenelist = self.genelist[:]
             if self.verboseflag:
@@ -346,7 +351,15 @@ class Analysis:
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
-            #self.creategenecache()
+            """
+            If the cache exists there are two possibilities.
+            a) All the requested genes are present in the cache. In that case, read the downloaded api and specimen data from disk and
+            populate apidata['apiinfo'] and apidata['specimeninfo']
+            b) A few of the requested genes are present in the cache. In that case, read the downloaded api and specimen data from disk and
+            populate apidata['apiinfo'] and apidata['specimeninfo'] for genes already present in the cache. For the rest, get all the probes
+            associated with the genes, download and save the api and specimen information and populate apidata['apiinfo'] and
+            apidata['specimeninfo'].
+            """
             self.downloadgenelist = [k for k in self.genelist if k not in self.genecache.keys()]
             if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
