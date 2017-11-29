@@ -437,17 +437,15 @@ class Analysis:
 
     def fwe_correction(self):
         """
-        Perform n_rep passes of FWE
+        Perform n_rep passes of FWE using result of first_iteration() as an initial guess
         """
         invn_rep = 1/self.n_rep
-        self.FWE_corrected_p = np.zeros(self.n_genes)
+        #self.FWE_corrected_p = np.zeros(self.n_genes)
         self.F_mat_perm_anovan = np.zeros((self.n_rep, self.n_genes))
         self.F_mat_perm_anovan[0] = self.F_vec_ref_anovan
         self.F_vec_perm_anovan = np.zeros(self.n_genes)
         for rep in range(1, self.n_rep):
             for j in range(0, self.n_genes):
-                #shuffle = np.random.permutation(self.anova_data['Area'])
-                #self.anova_data['Area'] = shuffle
                 self.anova_data['Area'] = np.random.permutation(self.anova_data['Area'])
                 self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,j]
                 mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
@@ -461,9 +459,10 @@ class Analysis:
         Populate pvalues and geneids for the result dict after n_rep passes of FWE
         """
         invn_rep = 1/self.n_rep
+        #ref represenets maximum p value for each gene across n_rep repetitions
         ref = self.F_mat_perm_anovan.max(1)
+        #compute family wise error corrected p value
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
-        #self.result = dict(zip(self.geneIds, self.FWE_corrected_p))
         self.result = dict(zip(self.all_probe_data['uniqueId'], self.FWE_corrected_p))
         if self.verboseflag:
             print(self.result)
