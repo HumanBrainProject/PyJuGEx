@@ -372,12 +372,13 @@ class Analysis:
             self.readCachedApiSpecimenData()
 
 
-    def getmeanzscores(self, gene_symbols, combined_zscores, area1len, area2len):
+    def getmeanzscores(self, combined_zscores):
         """
         Compute Winsorzed mean of zscores over all genes.
         """
-        unique_gene_symbols = np.unique(gene_symbols)
-        indices = [np.where(np.in1d(gene_symbols, x))[0] for x in unique_gene_symbols]
+        unique_gene_symbols = np.unique(self.genesymbols)
+        #Returns a list which contains indices where each gene_symbol has been
+        indices = [np.where(np.in1d(self.genesymbols, x))[0] for x in unique_gene_symbols]
         winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
         self.all_probe_data['uniqueId'] = unique_gene_symbols
         self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
@@ -391,7 +392,7 @@ class Analysis:
         if self.verboseflag:
             print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
 
-        self.getmeanzscores(self.genesymbols, combined_zscores, len([r['name'] for r in self.main_r if r['name'] == 'img1']), len([r['name'] for r in self.main_r if r['name'] == 'img2']))
+        self.getmeanzscores(combined_zscores)
         st = set(self.genesymbols)
         self.geneIds = [self.genesymbols[self.genesymbols.index(a)] if a in st else [self.genesymbols[0]] for ind, a in enumerate(self.all_probe_data['uniqueId'])]
         self.n_genes = len(self.all_probe_data['combined_zscores'][0])
