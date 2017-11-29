@@ -190,12 +190,13 @@ class Analysis:
 
     def set_ROI_MNI152(self, voi, index):
         """
-        Set the region of interest from the downloaded nii files
+        For each specimen and for the given voi populate self.main_r with zscores and valid coordinates
         """
         if index < 0 or index > 1:
             print('only 0 and 1 are valid choices')
             exit()
 #        self.main_r = [self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) for i in range(0, len(self.apidata['specimenInfo']))]
+
         for i in range(0, len(self.apidata['specimenInfo'])):
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
 
@@ -235,9 +236,8 @@ class Analysis:
 
     def expressionSpmCorrelation(self, img, apidataind, specimen, index):
         """
-        Create internal data structures with valid coordinates and corresponding zscores, specimen info
-        """       
-        #revisedApiData = dict.fromkeys(['zscores', 'coords', 'samples', 'specimen', 'name'])
+        Populate self.main_r with zscores and coords for samples which belong to a particular specimen and spatially represented in the given voi.
+        """
         revisedApiData = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
         revisedApiData['name'] = 'img'+str(index+1)
         dataImg = img.get_data()
@@ -249,7 +249,6 @@ class Analysis:
         coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or dataImg[coord[0],coord[1],coord[2]] <= self.mapthreshold or dataImg[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
         revisedApiData['coords'] = [c for c in coords if (c > 0).sum() == 3]
         revisedApiData['zscores'] = [z for (c, z) in zip(coords, apidataind['zscores']) if (c > 0).sum() == 3]
-        #revisedApiData['samples'] = apidataind['samples']
         revisedApiData['specimen'] = specimen['name']
         return revisedApiData
 
@@ -374,11 +373,24 @@ class Analysis:
 
     def getmeanzscores(self, combined_zscores):
         """
-        Compute Winsorzed mean of zscores over all genes.
+        Compute Winsorzed mean of zscores over all probes associated with a given gene. combined_zscores have zscores for all the probes and all the valid coordinates.
+        As a result you get a numpy array of size len(self.main_r)xlen(self.genelist). self.all_probe_data['combined_zscores'][i][j] returns the winsorzed mean of
+        jth gene taken over all the probes corresponding to the ith valid sample.
         """
         unique_gene_symbols = np.unique(self.genesymbols)
-        #Returns a list which contains indices where each gene_symbol has been
+        """
+        A = [a,a,a,b,b,b,c,c]
+        B = [a,b,c]
+        Following line of code will give  indices = [[0,1,2],[3,4,5],[6,7]]
+        """
         indices = [np.where(np.in1d(self.genesymbols, x))[0] for x in unique_gene_symbols]
+        """
+        for i in range (len(unique_gene_symbols)):
+                for j in range(len(combined_zscores)):
+                    for k in range(len(indices[i])):
+                        tmp[j] = combined_zscores[j][indices[i][k]][:]
+                winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1))
+        """
         winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
         self.all_probe_data['uniqueId'] = unique_gene_symbols
         self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
@@ -388,16 +400,17 @@ class Analysis:
         Prepare self.anova_data. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_data
         """
         combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
+        #Populates self.specimenFactors (id, race, gender, name, age)
         self.readSpecimenFactors(self.cache)
         if self.verboseflag:
             print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
-
+        #Populates self.all_probe_data (uniqueid and zscores)
         self.getmeanzscores(combined_zscores)
-        st = set(self.genesymbols)
-        self.geneIds = [self.genesymbols[self.genesymbols.index(a)] if a in st else [self.genesymbols[0]] for ind, a in enumerate(self.all_probe_data['uniqueId'])]
         self.n_genes = len(self.all_probe_data['combined_zscores'][0])
-        self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
-        self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
+        self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores']))]
+        #self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['name'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
+        self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores']))]
+        #self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img1'] + [r['specimen'] for r in self.main_r for i in range(len(r['zscores'])) if r['name'] == 'img2']
         st = set(self.specimenFactors['name'])
         self.anova_data['Age'] = [self.specimenFactors['age'][self.specimenFactors['name'].index(a)] if a in st else [self.specimenFactors['age'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
         self.anova_data['Race'] = [self.specimenFactors['race'][self.specimenFactors['name'].index(a)] if a in st else [self.specimenFactors['race'][0]] for ind, a in enumerate(self.anova_data['Specimen'])]
@@ -419,6 +432,7 @@ class Analysis:
             aov_table = sm.stats.anova_lm(mod, typ=1)
             if self.verboseflag:
                 print(aov_table)
+            #F_vec_ref_anovan is used as an initial condition to F_mat_perm_anovan in fwe_correction
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
 
     def fwe_correction(self):
@@ -449,7 +463,8 @@ class Analysis:
         invn_rep = 1/self.n_rep
         ref = self.F_mat_perm_anovan.max(1)
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
-        self.result = dict(zip(self.geneIds, self.FWE_corrected_p))
+        #self.result = dict(zip(self.geneIds, self.FWE_corrected_p))
+        self.result = dict(zip(self.all_probe_data['uniqueId'], self.FWE_corrected_p))
         if self.verboseflag:
             print(self.result)
 
