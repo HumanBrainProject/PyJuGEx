@@ -16,7 +16,6 @@ import sys
 import requests, requests.exceptions
 import pandas as pd
 import shutil
-import cProfile
 
 def getSpecimenData(info):
     """
@@ -50,15 +49,22 @@ class Analysis:
     def __init__(self, gene_cache, verbose=False):
         """
         Initialize the Analysis class with various internal variables -
-        gene_cache = Disk location where data from Allen Brain API has been downloaded and stored.
-        probeids = list of probe ids associated with the give list of genes.
+
+        probeids = list of probe ids associated with the give list of genes which are not present in genecache, if it exists.
         genelist = given list of genes
         downloadgenelist = list of genes whose information is not in the cache yet, needs to be downloaded
-        genesymbols =
-        donorids = size donor ids of Allen Brain API
-        vois = list fo two nii volumes for each region of interest
+        genesymbols = same length as probeids, each probe is represented with the corresponding genesymbol, used by getmeanzscores()
+        genecache = dictionary to indicate which keys are present in the cache
+        donorids = six donor ids of Allen Brain API
+        apidata = dictionary to store Allen Brain API data, with two keys - apiinfo contains zscores, samples etc and specimeninfo contains
+        age, race, sex of the six donors represented by donorids
+        vois = list of two nii volumes for each region of interest
         main_r = Internal variable for storing mni coordinates and zscores corresponsing to each region of interest.
-        mapthreshold = Internal variable to select or reject a sample
+        mapthreshold = Internal variable used at expressionSpmCorrelation() to select or reject a sample
+        n_rep = number of iterations of FWE correction
+        cache = Disk location where data from Allen Brain API has been downloaded and stored.
+        anova_data = Internal variable used by the ANOVA module - contains five keys - 'Age', 'Race', 'Specimen', 'Area', 'Zscores'
+        all_probe_data = dictionary with two keys - uniqueid, combinedzscores where each gene and the winsorzed mean zscores over all probes associated with that gene is stored
         result = dict for storing gene ids and associated p values.
         """
         self.probeids = []
@@ -75,14 +81,19 @@ class Analysis:
         self.main_r = []
         self.mapthreshold = 0.2
         self.n_rep = 1000
-        self.result = None
         self.cache = gene_cache
         self.verboseflag = verbose
         self.anova_data = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.all_probe_data = dict.fromkeys(['uniqueId', 'combined_zscores'])
-        self.probepath = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
-        if os.path.exists(self.cache) and not os.path.exists(self.probepath):
+        '''
+        Removes any folder that has not been written to properly, most likely due to force quit
+        '''
+        probepath = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
+        if os.path.exists(self.cache) and not os.path.exists(probepath):
             shutil.rmtree(self.cache, ignore_errors = False)
+        '''
+        Creates a gene cache to indicate which genes are present in the cache
+        '''
         if not os.path.exists(self.cache):
             print(self.cache,' does not exist. It will take some time ')
         else:
@@ -90,11 +101,14 @@ class Analysis:
             print(len(self.genecache),' genes exist in ', self.cache)
 
     def DifferentialAnalysis(self, genelist, roi1, roi2):
+        """
+        Driver routine
+        """
         if not genelist:
             print('Atleast one gene is needed for the analysis')
             exit()
         if not roi1 or not roi2:
-            print('Atleast two regions are needed for the analysis')
+            print('Atleast two regions are needed for the analysis')        
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
@@ -104,14 +118,18 @@ class Analysis:
         return self.result
 
     def cleanup(self):
+        """
+        Remove locally downloaded .nii or .nii.gz files
+        """
         for filename in glob.glob("output*"):
             os.remove(filename)
 
     def creategenecache(self):
-        donorpath = os.path.join(self.cache, self.donorids[0])
-        filename = os.path.join(donorpath, 'probes.txt')
-        f = open(filename, "r")
-        probes = json.load(f)
+        """
+
+        """
+        with open(os.path.join(self.cache, self.donorids[0]+'/probes.txt'), 'r') as f:
+            probes = json.load(f)
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
         if self.verboseflag:
@@ -179,7 +197,6 @@ class Analysis:
             print('only 0 and 1 are valid choices')
             exit()
 #        self.main_r = [self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) for i in range(0, len(self.apidata['specimenInfo']))]
-
         for i in range(0, len(self.apidata['specimenInfo'])):
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
 
@@ -331,7 +348,7 @@ class Analysis:
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
-            self.creategenecache()
+            #self.creategenecache()
             self.downloadgenelist = [k for k in self.genelist if k not in self.genecache.keys()]
             if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
@@ -403,8 +420,9 @@ class Analysis:
         self.F_vec_perm_anovan = np.zeros(self.n_genes)
         for rep in range(1, self.n_rep):
             for j in range(0, self.n_genes):
-                shuffle = np.random.permutation(self.anova_data['Area'])
-                self.anova_data['Area'] = shuffle
+                #shuffle = np.random.permutation(self.anova_data['Area'])
+                #self.anova_data['Area'] = shuffle
+                self.anova_data['Area'] = np.random.permutation(self.anova_data['Area'])
                 self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,j]
                 mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
                 aov_table = sm.stats.anova_lm(mod, typ=1)
