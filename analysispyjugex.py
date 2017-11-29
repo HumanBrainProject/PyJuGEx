@@ -410,6 +410,7 @@ class Analysis:
         self.n_genes = len(self.all_probe_data['combined_zscores'][0])
         self.anova_data['Area'] = [r['name'] for r in self.main_r for i in range(len(r['zscores']))]
         self.anova_data['Specimen'] = [r['specimen'] for r in self.main_r for i in range(len(r['zscores']))]
+        #Both Age and Race should have len(self.main_r) entries. The following three lines are used to get the correct values from specimenFactors['Age'] and specimenFactors['Race'] using specimenFactors['name'] and repeat them the required number of times as given by self.anova_data['Specimen']
         st = set(self.specimenFactors['name'])
         self.anova_data['Age'] = [self.specimenFactors['age'][self.specimenFactors['name'].index(a)] for ind, a in enumerate(self.anova_data['Specimen'])]
         self.anova_data['Race'] = [self.specimenFactors['race'][self.specimenFactors['name'].index(a)] for ind, a in enumerate(self.anova_data['Specimen'])]
