@@ -82,24 +82,24 @@ class Analysis:
         self.main_r = []
         self.mapthreshold = 0.2
         self.n_rep = 1000
-        self.cache = gene_cache
+        self.cachedir = gene_cache
         self.verboseflag = verbose
         self.anova_data = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.all_probe_data = dict.fromkeys(['uniqueId', 'combined_zscores'])
         '''
         Removes any folder that has not been written to properly, most likely due to force quit
         '''
-        probepath = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
-        if os.path.exists(self.cache) and not os.path.exists(probepath):
-            shutil.rmtree(self.cache, ignore_errors = False)
+        probepath = os.path.join(self.cachedir, self.donorids[0]+'/probes.txt')
+        if os.path.exists(self.cachedir) and not os.path.exists(probepath):
+            shutil.rmtree(self.cachedir, ignore_errors = False)
         '''
         Creates a gene cache to indicate which genes are present in the cache
         '''
-        if not os.path.exists(self.cache):
-            print(self.cache,' does not exist. It will take some time ')
+        if not os.path.exists(self.cachedir):
+            print(self.cachedir,' does not exist. It will take some time ')
         else:
             self.creategenecache()
-            print(len(self.genecache),' genes exist in ', self.cache)
+            print(len(self.genecache),' genes exist in ', self.cachedir)
 
     def DifferentialAnalysis(self, genelist, roi1, roi2):
         """
@@ -108,8 +108,11 @@ class Analysis:
         if not genelist:
             print('Atleast one gene is needed for the analysis')
             exit()
+        #CHECK THE NEXT ONE OUT
+        '''
         if not roi1 or not roi2:
             print('Atleast two regions are needed for the analysis')
+        '''
 
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
@@ -129,9 +132,9 @@ class Analysis:
     def creategenecache(self):
         """
         Create a dictionary with an entry for each gene whose api information has been downloaded.
-        We scan self.cache/15496/probes.txt for the gene symbols
+        We scan self.cachedir/15496/probes.txt for the gene symbols
         """
-        with open(os.path.join(self.cache, self.donorids[0]+'/probes.txt'), 'r') as f:
+        with open(os.path.join(self.cachedir, self.donorids[0]+'/probes.txt'), 'r') as f:
             probes = json.load(f)
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
@@ -143,10 +146,12 @@ class Analysis:
         Retrieve probe ids for the given gene lists, update self.probeids which will be used by queryapi() or queryapipartial() to
         form the url and update self.genesymbols to be used by getmeanzscores()
         """
+        base_retrieve_probeids = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
+        end_retrieve_probeids = "],rma::options[only$eq'probes.id']"
         if self.verboseflag:
             print('genelist ',self.genelist)
         for gene in self.genelist:
-            url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"+gene+"],rma::options[only$eq'probes.id']"
+            url = '{base}{gene_symbol}{end}'.format(base = base_retrieve_probeids, gene_symbol = gene, end = end_retrieve_probeids)
             if self.verboseflag:
                 print(url)
             try:
@@ -168,7 +173,7 @@ class Analysis:
         Read cached Allen Brain Api data from disk location and update self.apidata['specimenInfo'] and self.apidata['apiInfo']
         """
         for d in self.donorids:
-            donorpath = os.path.join(self.cache, d)
+            donorpath = os.path.join(self.cachedir, d)
             specimen = dict.fromkeys(['name', 'alignment3d'])
             with open(os.path.join(donorpath, 'specimenMat.txt'), 'r') as f:
                 specimen['alignment3d'] = np.loadtxt(f)
@@ -206,9 +211,15 @@ class Analysis:
         """
         Query Allen Brain Api for given set of genes
         """
+        base_query_api = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        probes = ''.join(p+"," for p in self.probeids)[:-1]
+        end_query_api = "][donors$eq"+donorId+"]"
+        url = '{base}{probes}{end}'.format(base = base_query_api, probes = probes, end = end_query_api)
+        '''
         url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in" + ''.join(p+"," for p in self.probeids)
         url = url[:-1]
         url += "][donors$eq"+donorId+"]"
+        '''
         try:
             response = requests.get(url)
             text = requests.get(url).json()
@@ -217,9 +228,9 @@ class Analysis:
             print(e)
             exit()
         data = text['msg']
-        if not os.path.exists(self.cache):
-            os.makedirs(self.cache)
-        donorPath = os.path.join(self.cache, donorId)
+        if not os.path.exists(self.cachedir):
+            os.makedirs(self.cachedir)
+        donorPath = os.path.join(self.cachedir, donorId)
         if not os.path.exists(donorPath):
             os.makedirs(donorPath)
 
@@ -259,9 +270,12 @@ class Analysis:
         """
         Query Allen Brain Api for the given set of genes if they have not already been downloaded to genecache and save them on disk
         """
-        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in" + ''.join(p+"," for p in self.probeids)
-        url = url[:-1]
-        url += "][donors$eq"+donorId+"]"
+
+        base_url_queryapipartial = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        probes = ''.join(p+"," for p in self.probeids)[:-1]
+        end_url_queryapipartial = "][donors$eq"+donorId+"]"
+        url = '{base}{probes}{end}'.format(base = base_url_queryapipartial, probes = probes, end = end_url_queryapipartial)
+
         if self.verboseflag:
             print(url)
         try:
@@ -271,9 +285,9 @@ class Analysis:
             print(e)
             exit()
         data = text['msg']
-        if not os.path.exists(self.cache):
-            os.makedirs(self.cache)
-        donorpath = os.path.join(self.cache, donorId)
+        if not os.path.exists(self.cachedir):
+            os.makedirs(self.cachedir)
+        donorpath = os.path.join(self.cachedir, donorId)
         if not os.path.exists(donorpath):
             os.makedirs(donorpath)
         probes = data['probes']
@@ -300,10 +314,12 @@ class Analysis:
         Download names and transformation matrix for each specimen/donor from Allen Brain Api and save them on disk as specimenName.txt
         and specimenMat.txt respectively, load.
         """
+        base_url_downloadspecimens = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"
+        end_url_downloadspecimens = "']&include=alignment3d"
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
         self.apidata['specimenInfo'] = []
-        for s in specimens:
-            url = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"+s+"']&include=alignment3d"
+        for specimen_id in specimens:
+            url = '{base}{specimen_id}{end}'.format(base = base_url_downloadspecimens, specimen_id = specimen_id, end = end_url_downloadspecimens)
             if self.verboseflag:
                 print(url)
             try:
@@ -317,9 +333,9 @@ class Analysis:
             print(self.apidata['specimenInfo'])
 
         for d, s in zip(self.donorids, self.apidata['specimenInfo']):
-            with open(os.path.join(self.cache, d+'/specimenName.txt'), 'w') as outfile:
+            with open(os.path.join(self.cachedir, d+'/specimenName.txt'), 'w') as outfile:
                 outfile.write(s['name'])
-            np.savetxt(os.path.join(self.cache, d+'/specimenMat.txt'), s['alignment3d'])
+            np.savetxt(os.path.join(self.cachedir, d+'/specimenMat.txt'), s['alignment3d'])
 
 
     def getapidata(self):
@@ -340,15 +356,15 @@ class Analysis:
         Set list of genes and prepare to read/download data for them.
         """
         self.genelist = genelist
-        donorprobe = os.path.join(self.cache, self.donorids[0]+'/probes.txt')
+        donorprobe = os.path.join(self.cachedir, self.donorids[0]+'/probes.txt')
         """
         If the cache doesnt exist then get all the probes associated with the genes and download and save the api and specimen information
         and populate apidata['apiinfo'] and apidata['specimeninfo'].
         """
-        if not os.path.exists(self.cache):
+        if not os.path.exists(self.cachedir):
             self.downloadgenelist = self.genelist[:]
             if self.verboseflag:
-                print('self.cache does not exist')
+                print('self.cachedir does not exist')
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
@@ -403,7 +419,7 @@ class Analysis:
         """
         combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
-        self.read_specimen_factors(self.cache)
+        self.read_specimen_factors(self.cachedir)
         if self.verboseflag:
             print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
         #Populates self.all_probe_data (uniqueid and zscores)
@@ -444,6 +460,7 @@ class Analysis:
         aov_table = sm.stats.anova_lm(mod, typ=1)
         return aov_table['F'][0]
 
+    #Pool inside a  pool, is it a good idea?
     def do_anova_with_permutation_rep(self, rep):
         self.F_vec_perm_anovan = list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
         return self.F_vec_perm_anovan
@@ -485,9 +502,9 @@ class Analysis:
         """
         Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
         """
-        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
+        url_build_specimen_factors = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
         try:
-            text = requests.get(url).json()
+            text = requests.get(url_build_specimen_factors).json()
         except requests.exceptions.RequestException as e:
             print('In build_specimen_factors')
             print(e)
