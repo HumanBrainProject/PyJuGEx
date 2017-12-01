@@ -48,7 +48,7 @@ class Analysis:
 
     def __init__(self, gene_cache, verbose=False):
         """
-        Initialize the Analysis class with various internal variables -
+        initialize_anova_data the Analysis class with various internal variables -
 
         probeids = list of probe ids associated with the give list of genes which are not present in genecache, if it exists.
         genelist = given list of genes
@@ -108,13 +108,14 @@ class Analysis:
             print('Atleast one gene is needed for the analysis')
             exit()
         if not roi1 or not roi2:
-            print('Atleast two regions are needed for the analysis')        
+            print('Atleast two regions are needed for the analysis')
+
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
         self.cleanup()
         print('Starting the analysis. This may take some time.....')
-        self.performAnova()
+        self.perform_anova()
         return self.result
 
     def cleanup(self):
@@ -143,8 +144,8 @@ class Analysis:
         """
         if self.verboseflag:
             print('genelist ',self.genelist)
-        for g in self.genelist:
-            url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"+g+"],rma::options[only$eq'probes.id']"
+        for gene in self.genelist:
+            url = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"+gene+"],rma::options[only$eq'probes.id']"
             if self.verboseflag:
                 print(url)
             try:
@@ -153,8 +154,8 @@ class Analysis:
                 print('In retreiveprobeids')
                 print(e)
             data = xmltodict.parse(response.text)
-            self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if g in self.downloadgenelist]
-            self.genesymbols = self.genesymbols + [g for d in data['Response']['probes']['probe']]
+            self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if gene in self.downloadgenelist]
+            self.genesymbols = self.genesymbols + [gene for d in data['Response']['probes']['probe']]
 
         if self.verboseflag:
             print('probeids: ',self.probeids)
@@ -395,7 +396,7 @@ class Analysis:
         self.all_probe_data['uniqueId'] = unique_gene_symbols
         self.all_probe_data['combined_zscores'] = winsorzed_mean_zscores
 
-    def initialize(self):
+    def initialize_anova_data(self):
         """
         Prepare self.anova_data. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_data
         """
@@ -435,23 +436,25 @@ class Analysis:
             #F_vec_ref_anovan is used as an initial condition to F_mat_perm_anovan in fwe_correction
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
 
+    def do_anova_with_permutation_gene(self, index_to_uniqueId):
+        self.anova_data['Area'] = np.random.permutation(self.anova_data['Area'])
+        self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,index_to_uniqueId]
+        mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
+        aov_table = sm.stats.anova_lm(mod, typ=1)
+        return aov_table['F'][0]
+
+    def do_anova_with_permutation_rep(self, rep):
+        self.F_vec_perm_anovan = list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
+        return self.F_vec_perm_anovan
+
     def fwe_correction(self):
         """
         Perform n_rep passes of FWE using result of first_iteration() as an initial guess
         """
         invn_rep = 1/self.n_rep
-        #self.FWE_corrected_p = np.zeros(self.n_genes)
-        self.F_mat_perm_anovan = np.zeros((self.n_rep, self.n_genes))
-        self.F_mat_perm_anovan[0] = self.F_vec_ref_anovan
-        self.F_vec_perm_anovan = np.zeros(self.n_genes)
-        for rep in range(1, self.n_rep):
-            for j in range(0, self.n_genes):
-                self.anova_data['Area'] = np.random.permutation(self.anova_data['Area'])
-                self.anova_data['Zscores'] = self.all_probe_data['combined_zscores'][:,j]
-                mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
-                aov_table = sm.stats.anova_lm(mod, typ=1)
-                self.F_vec_perm_anovan[j] = aov_table['F'][0]
-            self.F_mat_perm_anovan[rep] = self.F_vec_perm_anovan
+        initial_guess_F_vec = self.F_vec_ref_anovan
+        self.F_mat_perm_anovan = np.array(list(map(self.do_anova_with_permutation_rep, range(1,self.n_rep))))
+        self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_result()
 
     def accumulate_result(self):
@@ -467,12 +470,12 @@ class Analysis:
         if self.verboseflag:
             print(self.result)
 
-    def performAnova(self):
+    def perform_anova(self):
         """
         Perform one way anova on zscores as the dependent variable and specimen factors such as age, race, name and area
         as independent variables
         """
-        self.initialize()
+        self.initialize_anova_data()
         self.first_iteration()
         self.fwe_correction()
 
