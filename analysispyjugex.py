@@ -16,8 +16,9 @@ import sys
 import requests, requests.exceptions
 import pandas as pd
 import shutil
+import multiprocessing
 
-def getSpecimenData(info):
+def get_specimen_data(info):
     """
     For each specimen, extract the name and alignment matrix and put into a dict object
     """
@@ -311,7 +312,7 @@ class Analysis:
                 print('In downloadspecimens ')
                 print(e)
                 exit()
-            self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [getSpecimenData(text['msg'][0])]
+            self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [get_specimen_data(text['msg'][0])]
         if self.verboseflag:
             print(self.apidata['specimenInfo'])
 
@@ -402,7 +403,7 @@ class Analysis:
         """
         combined_zscores = [r['zscores'][i] for r in self.main_r for i in range(len(r['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
-        self.readSpecimenFactors(self.cache)
+        self.read_specimen_factors(self.cache)
         if self.verboseflag:
             print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
         #Populates self.all_probe_data (uniqueid and zscores)
@@ -453,7 +454,8 @@ class Analysis:
         """
         invn_rep = 1/self.n_rep
         initial_guess_F_vec = self.F_vec_ref_anovan
-        self.F_mat_perm_anovan = np.array(list(map(self.do_anova_with_permutation_rep, range(1,self.n_rep))))
+        pool = multiprocessing.Pool()
+        self.F_mat_perm_anovan = np.array(list(pool.map(self.do_anova_with_permutation_rep, range(1,self.n_rep))))
         self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_result()
 
@@ -479,7 +481,7 @@ class Analysis:
         self.first_iteration()
         self.fwe_correction()
 
-    def buildSpecimenFactors(self, cache):
+    def build_specimen_factors(self, cache):
         """
         Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
         """
@@ -487,7 +489,7 @@ class Analysis:
         try:
             text = requests.get(url).json()
         except requests.exceptions.RequestException as e:
-            print('In buildspecimenfactors')
+            print('In build_specimen_factors')
             print(e)
             exit()
         factorPath = os.path.join(cache, 'specimenFactors.txt')
@@ -502,13 +504,13 @@ class Analysis:
         self.specimenFactors['age'] = [r['age']['days']/365 for r in res]
 
 
-    def readSpecimenFactors(self, cache):
+    def read_specimen_factors(self, cache):
         """
         Read various factors such as age, name, race, gender of the six specimens from disk.
         """
         fileName = os.path.join(cache, 'specimenFactors.txt')
         if not os.path.exists(fileName):
-            self.buildSpecimenFactors(cache)
+            self.build_specimen_factors(cache)
         f = open(fileName, "r")
         content = json.load(f)
         f.close()
