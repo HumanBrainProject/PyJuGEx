@@ -17,7 +17,7 @@ import requests, requests.exceptions
 import pandas as pd
 import shutil
 import multiprocessing
-
+import nibabel as nib
 def get_specimen_data(info):
     """
     For each specimen, extract the name and alignment matrix and put into a dict object
@@ -106,13 +106,9 @@ class Analysis:
         Driver routine
         """
         if not genelist:
-            print('Atleast one gene is needed for the analysis')
-            raise
-        #CHECK THE NEXT ONE OUT
-        '''
-        if not roi1 or not roi2:
-            print('Atleast two regions are needed for the analysis')
-        '''
+            raise ValueError('Atleast one gene is needed for the analysis')
+        if not (isinstance(roi1, nib.nifti1.Nifti1Image) or isinstance(roi2, nib.nifti1.Nifti1Image)):
+            raise ValueError('Atleast two valid regions of interest are needed')
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)

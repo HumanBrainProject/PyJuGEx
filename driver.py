@@ -22,8 +22,6 @@ if len([id for id in result if result[id] < .05]) > 0:
 else:
     print('There are no differentially expressed genes in the given regions')
 
-
-
 #UNCOMMENT THE FOLLOWING TWO LINES UPLOAD THE PMAPS TO COLLAB STORAGE
 #import collab
 
