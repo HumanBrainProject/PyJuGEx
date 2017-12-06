@@ -18,6 +18,8 @@ import pandas as pd
 import shutil
 import multiprocessing
 import nibabel as nib
+import logging
+
 def get_specimen_data(info):
     """
     For each specimen, extract the name and alignment matrix and put into a dict object
@@ -86,6 +88,8 @@ class Analysis:
         self.verboseflag = verbose
         self.anova_data = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.all_probe_data = dict.fromkeys(['uniqueId', 'combined_zscores'])
+        logging.basicConfig(level=logging.INFO)
+
         '''
         Removes any folder that has not been written to properly, most likely due to force quit
         '''
@@ -96,10 +100,10 @@ class Analysis:
         Creates a gene cache to indicate which genes are present in the cache
         '''
         if not os.path.exists(self.cachedir):
-            print(self.cachedir,' does not exist. It will take some time ')
+            logging.getLogger(__name__).info('{} does not exist. It will take some time '.format(self.cachedir))
         else:
             self.creategenecache()
-            print(len(self.genecache),' genes exist in ', self.cachedir)
+            logging.getLogger(__name__).info('{} genes exist in {}'.format(len(self.genecache), self.cachedir))
 
     def DifferentialAnalysis(self, genelist, roi1, roi2):
         """
@@ -112,7 +116,7 @@ class Analysis:
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
-        print('Starting the analysis. This may take some time.....')
+        logging.getLogger(__name__).info('Starting the analysis. This may take some time.....')
         self.perform_anova()
         return self.result
 
@@ -126,7 +130,7 @@ class Analysis:
         for p in probes:
             self.genecache.update({p['gene-symbol'] : None})
         if self.verboseflag:
-            print(self.genecache)
+            logging.getLogger(__name__).info('Genecache: {}'.format(self.genecache))
 
     def retrieveprobeids(self):
         """
@@ -135,25 +139,23 @@ class Analysis:
         """
         base_retrieve_probeids = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
         end_retrieve_probeids = "],rma::options[only$eq'probes.id']"
-        if self.verboseflag:
-            print('genelist ',self.genelist)
         for gene in self.genelist:
             url = '{base}{gene_symbol}{end}'.format(base = base_retrieve_probeids, gene_symbol = gene, end = end_retrieve_probeids)
             if self.verboseflag:
-                print(url)
+                logging.getLogger(__name__).info('url: {}'.format(url))
+                #print(url)
             try:
                 response = requests.get(url)
             except requests.exceptions.RequestException as e:
-                print('In retreiveprobeids')
-                print(e)
+                logging.getLogger(__name__).error(e)
                 raise
             data = xmltodict.parse(response.text)
             self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if gene in self.downloadgenelist]
             self.genesymbols = self.genesymbols + [gene for d in data['Response']['probes']['probe']]
 
         if self.verboseflag:
-            print('probeids: ',self.probeids)
-            print('genesymbols: ',self.genesymbols)
+            logging.getLogger(__name__).info('probeids: {}'.format(self.probeids))
+            logging.getLogger(__name__).info('genesymbols: {}'.format(self.genesymbols))
 
 
     def readCachedApiSpecimenData(self):
@@ -181,7 +183,7 @@ class Analysis:
 
             self.apidata['apiinfo'] = self.apidata['apiinfo']  + [{'samples' : samplesC, 'zscores' : zscoresC}]
             if self.verboseflag:
-                print('inside readcachedata ',len(self.apidata['apiinfo'][-1]['samples']), ' ', self.apidata['apiinfo'][-1]['zscores'].shape)
+                logging.getLogger(__name__).info('inside readcachedata {}, {}'.format(len(self.apidata['apiinfo'][-1]['samples']), self.apidata['apiinfo'][-1]['zscores'].shape))
 
     def set_ROI_MNI152(self, voi, index):
         """
@@ -200,11 +202,6 @@ class Analysis:
         probes = ''.join(p+"," for p in self.probeids)[:-1]
         end_query_api = "][donors$eq"+donorId+"]"
         url = '{base}{probes}{end}'.format(base = base_query_api, probes = probes, end = end_query_api)
-        '''
-        url = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in" + ''.join(p+"," for p in self.probeids)
-        url = url[:-1]
-        url += "][donors$eq"+donorId+"]"
-        '''
         try:
             response = requests.get(url)
             text = requests.get(url).json()
@@ -229,7 +226,7 @@ class Analysis:
             json.dump(data['probes'], outfile)
 
         if self.verboseflag:
-            print('For ',donorId,' samples_length: ',len(data['samples']),' probes_length: ',len(data['probes']),' zscores_shape: ',zscores.shape)
+            logging.getLogger(__name__).info('For {} samples_length: {}  probes_length: {} zscores_shape: {} '.format(donorId,len(data['samples']),len(data['probes']), zscores.shape))
         return {'samples' : data['samples'], 'probes' : data['probes'], 'zscores' : zscores}
 
     def expressionSpmCorrelation(self, img, apidataind, specimen, index):
@@ -260,14 +257,10 @@ class Analysis:
         probes = ''.join(p+"," for p in self.probeids)[:-1]
         end_url_queryapipartial = "][donors$eq"+donorId+"]"
         url = '{base}{probes}{end}'.format(base = base_url_queryapipartial, probes = probes, end = end_url_queryapipartial)
-
-        if self.verboseflag:
-            print(url)
         try:
             text = requests.get(url).json()
         except requests.exceptions.RequestException as e:
-            print('In queryapipartial ')
-            print(e)
+            logging.getLogger(__name__).error(e)
             raise
         data = text['msg']
         if not os.path.exists(self.cachedir):
@@ -305,17 +298,14 @@ class Analysis:
         self.apidata['specimenInfo'] = []
         for specimen_id in specimens:
             url = '{base}{specimen_id}{end}'.format(base = base_url_downloadspecimens, specimen_id = specimen_id, end = end_url_downloadspecimens)
-            if self.verboseflag:
-                print(url)
             try:
                 text = requests.get(url).json()
             except requests.exceptions.RequestException as e:
-                print('In downloadspecimens ')
-                print(e)
+                logging.getLogger(__name__).info(e)
                 raise
             self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [get_specimen_data(text['msg'][0])]
         if self.verboseflag:
-            print(self.apidata['specimenInfo'])
+            logging.getLogger(__name__).info('{}'.format(self.apidata['specimenInfo']))
 
         for d, s in zip(self.donorids, self.apidata['specimenInfo']):
             with open(os.path.join(self.cachedir, d+'/specimenName.txt'), 'w') as outfile:
@@ -348,8 +338,6 @@ class Analysis:
         """
         if not os.path.exists(self.cachedir):
             self.downloadgenelist = self.genelist[:]
-            if self.verboseflag:
-                print('self.cachedir does not exist')
             self.retrieveprobeids()
             self.download_and_retrieve_gene_data()
         else:
@@ -366,7 +354,7 @@ class Analysis:
             if self.downloadgenelist:
                 print('Microarray expression values of',len(self.downloadgenelist),'gene(s) need(s) to be downloaded')
             if self.verboseflag:
-                print(self.downloadgenelist)
+                logging.getLogger(__name__).info('genes to be downloaded:{} '.format(self.downloadgenelist))
             self.retrieveprobeids()
             if self.downloadgenelist:
                 for d in self.donorids:
@@ -406,7 +394,7 @@ class Analysis:
         #Populates self.specimenFactors (id, race, gender, name, age)
         self.read_specimen_factors(self.cachedir)
         if self.verboseflag:
-            print("number of specimens ", len(self.specimenFactors), " name: ", len(self.specimenFactors['name']))  
+            logging.getLogger(__name__).info("number of specimens: {} name: {}".format(len(self.specimenFactors), len(self.specimenFactors['name'])))
         #Populates self.all_probe_data (uniqueid and zscores)
         self.getmeanzscores(combined_zscores)
 
@@ -417,12 +405,6 @@ class Analysis:
         st = set(self.specimenFactors['name'])
         self.anova_data['Age'] = [self.specimenFactors['age'][self.specimenFactors['name'].index(a)] for ind, a in enumerate(self.anova_data['Specimen'])]
         self.anova_data['Race'] = [self.specimenFactors['race'][self.specimenFactors['name'].index(a)] for ind, a in enumerate(self.anova_data['Specimen'])]
-        if self.verboseflag:
-            print('race')
-            print(self.anova_data['Race'])
-            print('age')
-            print(self.anova_data['Age'])
-            print(len(self.genelist))
 
     def first_iteration(self):
         """
@@ -434,7 +416,7 @@ class Analysis:
             mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_data).fit()
             aov_table = sm.stats.anova_lm(mod, typ=1)
             if self.verboseflag:
-                print(aov_table)
+                logging.getLogger(__name__).info('aov table: {}'.format(aov_table))
             #F_vec_ref_anovan is used as an initial condition to F_mat_perm_anovan in fwe_correction
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
 
@@ -472,7 +454,7 @@ class Analysis:
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
         self.result = dict(zip(self.all_probe_data['uniqueId'], self.FWE_corrected_p))
         if self.verboseflag:
-            print(self.result)
+            logging.getLogger(__name__).info('Result: {}'.format(self.result))
 
     def perform_anova(self):
         """
