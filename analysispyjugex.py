@@ -191,13 +191,8 @@ class Analysis:
         """
         For each specimen and for the given voi populate self.main_r with zscores and valid coordinates
         """
-        try:
-            if index < 0 or index > 1:
-                raise ValueError
-        except ValueError:
-            print('only 0 and 1 are valid choices')
-            raise
-
+        if index < 0 or index > 1:
+            raise ValueError('only 0 and 1 are valid choices')
         for i in range(0, len(self.apidata['specimenInfo'])):
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
 

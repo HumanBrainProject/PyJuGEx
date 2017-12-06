@@ -30,24 +30,18 @@ class jubrain:
     @classmethod
     def probability_map(cls, regionname, coordspace):
         if coordspace is False:
-            print('Only MNI152 template space is supported')
-            exit()
+            raise ValueError('Only MNI152 template space is supported')
         if regionname not in dictionaryimages:
-            print('Regionname',regionname,'is not present in the database')
-            exit()
+            raise ValueError(regionname+' is not present in the database')
         url = dictionaryimages[regionname]
         last = url.split('.')[-1]
         try:
             r = requests.get(url, verify=False)
-        except requests.HTTPError as e:
+        except requests.HTTPError(e):
             print(e)
             raise
-        try:
-            if last not in ('nii', 'gz'):
-                raise OSError
-        except OSError:
-            print('Not an acceptable file format for rois')
-            raise
+        if last not in ('nii', 'gz'):
+            raise OSError('Not an acceptable file format for rois')
         fp, fp_name = tempfile.mkstemp(suffix='.'+last if last == 'nii' else '.nii.'+last)
         os.write(fp, r.content)
         img_array = nib.load(fp_name)
