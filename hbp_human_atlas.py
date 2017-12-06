@@ -3,6 +3,8 @@
 #Inpython2
 import nibabel as nib
 import requests
+import tempfile
+import os
 dictionaryimages = {}
 '''
 with open('roinames.txt') as f:
@@ -40,13 +42,12 @@ class jubrain:
         except requests.exceptions.RequestException as e:
             print(e)
             exit()
-        if last == 'nii':
-            filename = 'output'+regionname+'.'+last
-        elif last == 'gz':
-            filename = 'output'+regionname+'.nii.gz'
-        else:
+        if last not in ('nii', 'gz'):
             print('Not an acceptable file format for rois')
             exit()
-        with open(filename, 'wb') as f:
-            f.write(r.content)
-        return nib.load(filename)
+        fp, fp_name = tempfile.mkstemp(suffix='.'+last if last == 'nii' else '.nii.'+last)
+        os.write(fp, r.content)
+        img_array = nib.load(fp_name)
+        os.close(fp)
+        return img_array
+

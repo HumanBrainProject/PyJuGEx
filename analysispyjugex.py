@@ -117,17 +117,9 @@ class Analysis:
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
-        self.cleanup()
         print('Starting the analysis. This may take some time.....')
         self.perform_anova()
         return self.result
-
-    def cleanup(self):
-        """
-        Remove locally downloaded .nii or .nii.gz files
-        """
-        for filename in glob.glob("output*"):
-            os.remove(filename)
 
     def creategenecache(self):
         """
