@@ -107,13 +107,12 @@ class Analysis:
         """
         if not genelist:
             print('Atleast one gene is needed for the analysis')
-            exit()
+            raise
         #CHECK THE NEXT ONE OUT
         '''
         if not roi1 or not roi2:
             print('Atleast two regions are needed for the analysis')
         '''
-
         self.set_candidate_genes(genelist)
         self.set_ROI_MNI152(roi1, 0)
         self.set_ROI_MNI152(roi2, 1)
@@ -151,6 +150,7 @@ class Analysis:
             except requests.exceptions.RequestException as e:
                 print('In retreiveprobeids')
                 print(e)
+                raise
             data = xmltodict.parse(response.text)
             self.probeids = self.probeids + [d['id'] for d in data['Response']['probes']['probe'] if gene in self.downloadgenelist]
             self.genesymbols = self.genesymbols + [gene for d in data['Response']['probes']['probe']]
@@ -191,10 +191,12 @@ class Analysis:
         """
         For each specimen and for the given voi populate self.main_r with zscores and valid coordinates
         """
-        if index < 0 or index > 1:
+        try:
+            if index < 0 or index > 1:
+                raise ValueError
+        except ValueError:
             print('only 0 and 1 are valid choices')
-            exit()
-#        self.main_r = [self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index) for i in range(0, len(self.apidata['specimenInfo']))]
+            raise
 
         for i in range(0, len(self.apidata['specimenInfo'])):
             self.main_r.append(self.expressionSpmCorrelation(voi, self.apidata['apiinfo'][i], self.apidata['specimenInfo'][i], index))
@@ -218,7 +220,7 @@ class Analysis:
         except requests.exceptions.RequestException as e:
             print('In queryapi ')
             print(e)
-            exit()
+            raise
         data = text['msg']
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
@@ -275,7 +277,7 @@ class Analysis:
         except requests.exceptions.RequestException as e:
             print('In queryapipartial ')
             print(e)
-            exit()
+            raise
         data = text['msg']
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
@@ -319,7 +321,7 @@ class Analysis:
             except requests.exceptions.RequestException as e:
                 print('In downloadspecimens ')
                 print(e)
-                exit()
+                raise
             self.apidata['specimenInfo'] = self.apidata['specimenInfo'] + [get_specimen_data(text['msg'][0])]
         if self.verboseflag:
             print(self.apidata['specimenInfo'])
@@ -500,7 +502,7 @@ class Analysis:
         except requests.exceptions.RequestException as e:
             print('In build_specimen_factors')
             print(e)
-            exit()
+            raise
         factorPath = os.path.join(cache, 'specimenFactors.txt')
         with open(factorPath, 'w') as outfile:
             json.dump(text, outfile)

@@ -39,12 +39,15 @@ class jubrain:
         last = url.split('.')[-1]
         try:
             r = requests.get(url, verify=False)
-        except requests.exceptions.RequestException as e:
+        except requests.HTTPError as e:
             print(e)
-            exit()
-        if last not in ('nii', 'gz'):
+            raise
+        try:
+            if last not in ('nii', 'gz'):
+                raise OSError
+        except OSError:
             print('Not an acceptable file format for rois')
-            exit()
+            raise
         fp, fp_name = tempfile.mkstemp(suffix='.'+last if last == 'nii' else '.nii.'+last)
         os.write(fp, r.content)
         img_array = nib.load(fp_name)
