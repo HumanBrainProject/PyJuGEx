@@ -441,9 +441,9 @@ class Analysis:
         """
         invn_rep = 1/self.n_rep
         #ref represenets maximum p value for each gene across n_rep repetitions
-        ref = self.F_mat_perm_anovan.max(1)
+        max_F_mat_perm_anovan = self.F_mat_perm_anovan.max(1)
         #compute family wise error corrected p value
-        self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
+        self.FWE_corrected_p =  [len([1 for a in max_F_mat_perm_anovan if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in max_F_mat_perm_anovan if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
         self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
         if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
@@ -465,8 +465,7 @@ class Analysis:
         try:
             text = requests.get(url_build_specimen_factors).json()
         except requests.exceptions.RequestException as e:
-            print('In build_specimen_factors')
-            print(e)
+            logging.getLogger(__name__).error(e)
             raise
         factorPath = os.path.join(cache, 'specimenFactors.txt')
         with open(factorPath, 'w') as outfile:
