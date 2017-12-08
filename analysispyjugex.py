@@ -20,13 +20,13 @@ import multiprocessing
 import nibabel as nib
 import logging
 
-def get_specimen_data(info):
+def get_specimen_data(specimen_metadata):
     """
     For each specimen, extract the name and alignment matrix and put into a dict object
     """
     specimen = dict()
-    specimen['name'] = info['name']
-    x = info['alignment3d']
+    specimen['name'] = specimen_metadata['name']
+    x = specimen_metadata['alignment3d']
     specimen['alignment3d'] = np.array([
     [x['tvr_00'], x['tvr_01'], x['tvr_02'], x['tvr_09']],
     [x['tvr_03'], x['tvr_04'], x['tvr_05'], x['tvr_10']],
@@ -34,11 +34,11 @@ def get_specimen_data(info):
     [0, 0, 0, 1]])
     return specimen
 
-def transform_samples_MRI_to_MNI52(samples, T):
+def transform_samples_MRI_to_MNI52(samples, transformation_mat):
     """
     Convert the MRI coordinates of samples to MNI152 space
     """
-    np_T = np.array(T[0:3, 0:4])
+    np_T = np.array(transformation_mat[0:3, 0:4])
     mri = np.vstack(s['sample']['mri'] for s in samples)
     add = np.ones((len(mri), 1), dtype=np.int)
     mri = np.append(mri, add, axis=1)
@@ -83,25 +83,25 @@ class Analysis:
         self.filtered_coords_and_zscores = []
         self.filter_threshold = 0.2
         self.n_rep = 1000
-        self.cachedir = gene_cache
-        self.verboseflag = verbose
+        self.cache_dir = gene_cache
+        self.verbose = verbose
         self.anova_factors = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])
         logging.basicConfig(level=logging.INFO)
         '''
         Removes any folder that has not been written to properly, most likely due to force quit
         '''
-        probepath = os.path.join(self.cachedir, '{}/probes.txt'.format(self.donor_ids[0]))
-        if os.path.exists(self.cachedir) and not os.path.exists(probepath):
-            shutil.rmtree(self.cachedir, ignore_errors = False)
+        probe_path = os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0]))
+        if os.path.exists(self.cache_dir) and not os.path.exists(probe_path):
+            shutil.rmtree(self.cache_dir, ignore_errors = False)
         '''
         Creates a gene cache to indicate which genes are present in the cache
         '''
-        if not os.path.exists(self.cachedir):
-            logging.getLogger(__name__).info('{} does not exist. It will take some time '.format(self.cachedir))
+        if not os.path.exists(self.cache_dir):
+            logging.getLogger(__name__).info('{} does not exist. It will take some time '.format(self.cache_dir))
         else:
             self.create_gene_cache()
-            logging.getLogger(__name__).info('{} genes exist in {}'.format(len(self.gene_cache), self.cachedir))
+            logging.getLogger(__name__).info('{} genes exist in {}'.format(len(self.gene_cache), self.cache_dir))
 
     def DifferentialAnalysis(self, gene_list, roi1, roi2):
         """
@@ -121,13 +121,13 @@ class Analysis:
     def create_gene_cache(self):
         """
         Create a dictionary with an entry for each gene whose api information has been downloaded.
-        We scan self.cachedir/15496/probes.txt for the gene symbols
+        We scan self.cache_dir/15496/probes.txt for the gene symbols
         """
-        with open(os.path.join(self.cachedir, '{}/probes.txt'.format(self.donor_ids[0])), 'r') as f:
+        with open(os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0])), 'r') as f:
             probes = json.load(f)
         for probe in probes:
             self.gene_cache.update({probe['gene-symbol'] : None})
-        if self.verboseflag:
+        if self.verbose:
             logging.getLogger(__name__).info('gene_cache: {}'.format(self.gene_cache))
 
     def retrieve_probe_ids(self):
@@ -140,7 +140,7 @@ class Analysis:
 
         for gene in self.gene_list:
             url = '{base}{gene_symbol}{end}'.format(base = base_retrieve_probe_ids, gene_symbol = gene, end = end_retrieve_probe_ids)
-            if self.verboseflag:
+            if self.verbose:
                 logging.getLogger(__name__).info('url: {}'.format(url))
                 #print(url)
             try:
@@ -152,7 +152,7 @@ class Analysis:
             self.probe_ids = self.probe_ids + [donor['id'] for donor in data['Response']['probes']['probe'] if gene in self.gene_list_to_download]
             self.gene_symbols = self.gene_symbols + [gene for donor in data['Response']['probes']['probe']]
 
-        if self.verboseflag:
+        if self.verbose:
             logging.getLogger(__name__).info('probe_ids: {}'.format(self.probe_ids))
             logging.getLogger(__name__).info('gene_symbols: {}'.format(self.gene_symbols))
 
@@ -162,7 +162,7 @@ class Analysis:
         Read cached Allen Brain Api data from disk location and update self.allen_brain_api_dict['specimen_info'] and self.allen_brain_api_dict['samples_and_zscores']
         """
         for donor in self.donor_ids:
-            donorpath = os.path.join(self.cachedir, donor)
+            donorpath = os.path.join(self.cache_dir, donor)
             specimen = dict.fromkeys(['name', 'alignment3d'])
             with open(os.path.join(donorpath, 'specimenMat.txt'), 'r') as f:
                 specimen['alignment3d'] = np.loadtxt(f)
@@ -174,7 +174,7 @@ class Analysis:
             with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
                 zscores = np.loadtxt(f)
             self.allen_brain_api_dict['samples_and_zscores'] = self.allen_brain_api_dict['samples_and_zscores']  + [{'samples' : samples, 'zscores' : zscores}]
-            if self.verboseflag:
+            if self.verbose:
                 logging.getLogger(__name__).info('inside readcachedata {}, {}'.format(len(self.allen_brain_api_dict['samples_and_zscores'][-1]['samples']), self.allen_brain_api_dict['samples_and_zscores'][-1]['zscores'].shape))
 
     def set_roi_MNI152(self, voi, index):
@@ -201,9 +201,9 @@ class Analysis:
             logging.getLogger(__name__).info(e)
             raise
         data = text['msg']
-        if not os.path.exists(self.cachedir):
-            os.makedirs(self.cachedir)
-        donorPath = os.path.join(self.cachedir, donorId)
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+        donorPath = os.path.join(self.cache_dir, donorId)
         if not os.path.exists(donorPath):
             os.makedirs(donorPath)
 
@@ -216,7 +216,7 @@ class Analysis:
         with open(os.path.join(donorPath, 'probes.txt'), 'w') as outfile:
             json.dump(data['probes'], outfile)
 
-        if self.verboseflag:
+        if self.verbose:
             logging.getLogger(__name__).info('For {} samples_length: {}  probes_length: {} zscores_shape: {} '.format(donorId,len(data['samples']),len(data['probes']), zscores.shape))
         return {'samples' : data['samples'], 'probes' : data['probes'], 'zscores' : zscores}
 
@@ -253,9 +253,9 @@ class Analysis:
             logging.getLogger(__name__).error(e)
             raise
         data = text['msg']
-        if not os.path.exists(self.cachedir):
-            os.makedirs(self.cachedir)
-        donorpath = os.path.join(self.cachedir, donorId)
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+        donorpath = os.path.join(self.cache_dir, donorId)
         if not os.path.exists(donorpath):
             os.makedirs(donorpath)
         probes = data['probes']
@@ -294,13 +294,13 @@ class Analysis:
                 logging.getLogger(__name__).info(e)
                 raise
             self.allen_brain_api_dict['specimen_info'] = self.allen_brain_api_dict['specimen_info'] + [get_specimen_data(text['msg'][0])]
-        if self.verboseflag:
+        if self.verbose:
             logging.getLogger(__name__).info('{}'.format(self.allen_brain_api_dict['specimen_info']))
 
         for donor, specimen in zip(self.donor_ids, self.allen_brain_api_dict['specimen_info']):
-            with open(os.path.join(self.cachedir, '{}/specimenName.txt'.format(donor)), 'w') as outfile:
+            with open(os.path.join(self.cache_dir, '{}/specimenName.txt'.format(donor)), 'w') as outfile:
                 outfile.write(specimen['name'])
-            np.savetxt(os.path.join(self.cachedir, '{}/specimenMat.txt'.format(specimen)), specimen['alignment3d'])
+            np.savetxt(os.path.join(self.cache_dir, '{}/specimenMat.txt'.format(donor)), specimen['alignment3d'])
 
 
     def download_allen_brain_api_data(self):
@@ -321,12 +321,12 @@ class Analysis:
         Set list of genes and prepare to read/download data for them.
         """
         self.gene_list = gene_list
-        donorprobe = os.path.join(self.cachedir, '{}/probes.txt'.format(self.donor_ids[0]))
+        donorprobe = os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0]))
         """
         If the cache doesnt exist then get all the probes associated with the genes and download and save the api and specimen information
         and populate allen_brain_api_dict['samples_and_zscores'] and allen_brain_api_data['specimen_info'].
         """
-        if not os.path.exists(self.cachedir):
+        if not os.path.exists(self.cache_dir):
             self.gene_list_to_download = self.gene_list[:]
             self.retrieve_probe_ids()
             self.download_and_retrieve_gene_data()
@@ -343,7 +343,7 @@ class Analysis:
             self.gene_list_to_download = [key for key in self.gene_list if key not in self.gene_cache.keys()]
             if self.gene_list_to_download:
                 print('Microarray expression values of',len(self.gene_list_to_download),'gene(s) need(s) to be downloaded')
-            if self.verboseflag:
+            if self.verbose:
                 logging.getLogger(__name__).info('genes to be downloaded:{} '.format(self.gene_list_to_download))
             self.retrieve_probe_ids()
             if self.gene_list_to_download:
@@ -382,8 +382,8 @@ class Analysis:
         """
         combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
-        self.read_specimen_factors(self.cachedir)
-        if self.verboseflag:
+        self.read_specimen_factors(self.cache_dir)
+        if self.verbose:
             logging.getLogger(__name__).info("number of specimens: {} name: {}".format(len(self.specimen_factors), len(self.specimen_factors['name'])))
         #Populates self.genesymbol_and_mean_zscores (uniqueid and zscores)
         self.get_mean_zscores(combined_zscores)
@@ -407,7 +407,7 @@ class Analysis:
             self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,i]
             mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_factors).fit()
             aov_table = sm.stats.anova_lm(mod, typ=1)
-            if self.verboseflag:
+            if self.verbose:
                 logging.getLogger(__name__).info('aov table: {}'.format(aov_table))
             #F_vec_ref_anovan is used as an initial condition to F_mat_perm_anovan in fwe_correction
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
@@ -445,7 +445,7 @@ class Analysis:
         #compute family wise error corrected p value
         self.FWE_corrected_p =  [len([1 for a in ref if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in ref if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
         self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
-        if self.verboseflag:
+        if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
 
     def anova(self):
