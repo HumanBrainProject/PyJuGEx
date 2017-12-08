@@ -132,7 +132,7 @@ class Analysis:
 
     def retrieve_probe_ids(self):
         """
-        Retrieve probe ids for the given gene lists, update self.probe_ids which will be used by query_allen_brain_api() or query_allen_brain_api_partial() to
+        Retrieve probe ids for the given gene lists, update self.probe_ids which will be used by download_and_save_zscores_samples() or download_and_save_zscores_samples_partial() to
         form the url and update self.gene_symbols to be used by get_mean_zscores()
         """
         base_retrieve_probe_ids = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
@@ -157,7 +157,7 @@ class Analysis:
             logging.getLogger(__name__).info('gene_symbols: {}'.format(self.gene_symbols))
 
 
-    def read_cached_api_specimen_data(self):
+    def read_cached_zscores_samples_and_specimen_data(self):
         """
         Read cached Allen Brain Api data from disk location and update self.allen_brain_api_dict['specimen_info'] and self.allen_brain_api_dict['samples_and_zscores']
         """
@@ -186,7 +186,7 @@ class Analysis:
         for i in range(len(self.allen_brain_api_dict['specimen_info'])):
             self.filtered_coords_and_zscores.append(self.filter_coordinates_and_zscores(voi, self.allen_brain_api_dict['samples_and_zscores'][i], self.allen_brain_api_dict['specimen_info'][i], index))
 
-    def query_allen_brain_api(self, donorId):
+    def __download_and_save_zscores_and_samples(self, donorId):
         """
         Query Allen Brain Api for given set of genes
         """
@@ -239,14 +239,14 @@ class Analysis:
         return revised_allen_brain_api_dict
 
 
-    def query_allen_brain_api_partial(self, donorId):
+    def __download_and_save_zscores_and_samples_partial(self, donorId):
         """
         Query Allen Brain Api for the given set of genes if they have not already been downloaded to gene_cache and save them on disk
         """
-        base_url_query_allen_brain_api_partial = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
+        base_url_download_and_save_zscores_samples_partial = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
-        end_url_query_allen_brain_api_partial = "][donors$eq{}]".format(donorId)
-        url = '{}{}{}'.format(base_url_query_allen_brain_api_partial, probes, end_url_query_allen_brain_api_partial)
+        end_url_download_and_save_zscores_samples_partial = "][donors$eq{}]".format(donorId)
+        url = '{}{}{}'.format(base_url_download_and_save_zscores_samples_partial, probes, end_url_download_and_save_zscores_samples_partial)
         try:
             text = requests.get(url).json()
         except requests.exceptions.RequestException as e:
@@ -277,7 +277,7 @@ class Analysis:
         zscores = np.append(zscoresC, zscores, axis=1)      
         np.savetxt(os.path.join(donorpath, 'zscores.txt'), zscores)
 
-    def download_specimens(self):
+    def download_and_save_specimens(self):
         """
         Download names and transformation matrix for each specimen/donor from Allen Brain Api and save them on disk as specimenName.txt
         and specimenMat.txt respectively, load.
@@ -303,18 +303,18 @@ class Analysis:
             np.savetxt(os.path.join(self.cache_dir, '{}/specimenMat.txt'.format(donor)), specimen['alignment3d'])
 
 
-    def download_allen_brain_api_data(self):
+    def download_and_save_zscores_and_samples(self):
         """
-        Loop through the donors and call query_allen_brain_api() and populate allen_brain_api_dict
+        Loop through the donors and call download_and_save_zscores_samples() and populate allen_brain_api_dict
         """
-        self.allen_brain_api_dict['samples_and_zscores'] = [self.query_allen_brain_api(donor) for donor in self.donor_ids]
+        self.allen_brain_api_dict['samples_and_zscores'] = [self.__download_and_save_zscores_and_samples(donor) for donor in self.donor_ids]
 
-    def download_and_retrieve_gene_data(self):
+    def download_and_save_zscores_samples_and_specimen_data(self):
         """
         Download data from Allen Brain Api for the given set of genes and specimen
         """
-        self.download_allen_brain_api_data()
-        self.download_specimens()
+        self.download_and_save_zscores_and_samples()
+        self.download_and_save_specimens()
 
     def set_candidate_genes(self, gene_list):
         """
@@ -329,7 +329,7 @@ class Analysis:
         if not os.path.exists(self.cache_dir):
             self.gene_list_to_download = self.gene_list[:]
             self.retrieve_probe_ids()
-            self.download_and_retrieve_gene_data()
+            self.download_and_save_zscores_samples_and_specimen_data()
         else:
             """
             If the cache exists there are two possibilities.
@@ -348,8 +348,8 @@ class Analysis:
             self.retrieve_probe_ids()
             if self.gene_list_to_download:
                 for donor in self.donor_ids:
-                    self.query_allen_brain_api_partial(donor)
-            self.read_cached_api_specimen_data()
+                    self.__download_and_save_zscores_and_samples_partial(donor)
+            self.read_cached_zscores_samples_and_specimen_data()
 
 
     def get_mean_zscores(self, combined_zscores):
