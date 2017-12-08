@@ -75,10 +75,10 @@ class Analysis:
         self.gene_symbols = []
         self.gene_cache = {}
         self.donor_ids = ['15496', '14380', '15697', '9861', '12876', '10021'] #HARDCODING donor_ids
-        self.allen_brain_api_dict = dict.fromkeys(['samples_and_zscores', 'specimen_info'])
+        self.samples_zscores_and_specimen_dict = dict.fromkeys(['samples_and_zscores', 'specimen_info'])
         self.specimen_factors = dict.fromkeys(['id', 'name', 'race', 'gender', 'age'])
-        self.allen_brain_api_dict['specimen_info'] = []
-        self.allen_brain_api_dict['samples_and_zscores'] = []
+        self.samples_zscores_and_specimen_dict['specimen_info'] = []
+        self.samples_zscores_and_specimen_dict['samples_and_zscores'] = []
         self.rois = []
         self.filtered_coords_and_zscores = []
         self.filter_threshold = 0.2
@@ -139,7 +139,7 @@ class Analysis:
         end_retrieve_probe_ids = "],rma::options[only$eq'probes.id']"
 
         for gene in self.gene_list:
-            url = '{base}{gene_symbol}{end}'.format(base = base_retrieve_probe_ids, gene_symbol = gene, end = end_retrieve_probe_ids)
+            url = '{}{}{}'.format(base_retrieve_probe_ids, gene, end_retrieve_probe_ids)
             if self.verbose:
                 logging.getLogger(__name__).info('url: {}'.format(url))
                 #print(url)
@@ -159,23 +159,23 @@ class Analysis:
 
     def read_cached_zscores_samples_and_specimen_data(self):
         """
-        Read cached Allen Brain Api data from disk location and update self.allen_brain_api_dict['specimen_info'] and self.allen_brain_api_dict['samples_and_zscores']
+        Read cached Allen Brain Api data from disk location and update self.samples_zscores_and_specimen_dict['specimen_info'] and self.samples_zscores_and_specimen_dict['samples_and_zscores']
         """
         for donor in self.donor_ids:
-            donorpath = os.path.join(self.cache_dir, donor)
+            donor_path = os.path.join(self.cache_dir, donor)
             specimen = dict.fromkeys(['name', 'alignment3d'])
-            with open(os.path.join(donorpath, 'specimenMat.txt'), 'r') as f:
+            with open(os.path.join(donor_path, 'specimenMat.txt'), 'r') as f:
                 specimen['alignment3d'] = np.loadtxt(f)
-            with open(os.path.join(donorpath, 'specimenName.txt'), 'r') as f:
+            with open(os.path.join(donor_path, 'specimenName.txt'), 'r') as f:
                 specimen['name'] = f.read()
-            self.allen_brain_api_dict['specimen_info'] = self.allen_brain_api_dict['specimen_info'] + [specimen]
-            with open(os.path.join(donorpath, 'samples.txt'), 'r') as f:
+            self.samples_zscores_and_specimen_dict['specimen_info'] = self.samples_zscores_and_specimen_dict['specimen_info'] + [specimen]
+            with open(os.path.join(donor_path, 'samples.txt'), 'r') as f:
                 samples = json.load(f)
-            with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
+            with open(os.path.join(donor_path, 'zscores.txt'), 'r') as f:
                 zscores = np.loadtxt(f)
-            self.allen_brain_api_dict['samples_and_zscores'] = self.allen_brain_api_dict['samples_and_zscores']  + [{'samples' : samples, 'zscores' : zscores}]
+            self.samples_zscores_and_specimen_dict['samples_and_zscores'] = self.samples_zscores_and_specimen_dict['samples_and_zscores']  + [{'samples' : samples, 'zscores' : zscores}]
             if self.verbose:
-                logging.getLogger(__name__).info('inside readcachedata {}, {}'.format(len(self.allen_brain_api_dict['samples_and_zscores'][-1]['samples']), self.allen_brain_api_dict['samples_and_zscores'][-1]['zscores'].shape))
+                logging.getLogger(__name__).info('inside readcachedata {}, {}'.format(len(self.samples_zscores_and_specimen_dict['samples_and_zscores'][-1]['samples']), self.samples_zscores_and_specimen_dict['samples_and_zscores'][-1]['zscores'].shape))
 
     def set_roi_MNI152(self, voi, index):
         """
@@ -183,16 +183,16 @@ class Analysis:
         """
         if index < 0 or index > 1:
             raise ValueError('only 0 and 1 are valid choices')
-        for i in range(len(self.allen_brain_api_dict['specimen_info'])):
-            self.filtered_coords_and_zscores.append(self.filter_coordinates_and_zscores(voi, self.allen_brain_api_dict['samples_and_zscores'][i], self.allen_brain_api_dict['specimen_info'][i], index))
+        for i in range(len(self.samples_zscores_and_specimen_dict['specimen_info'])):
+            self.filtered_coords_and_zscores.append(self.filter_coordinates_and_zscores(voi, self.samples_zscores_and_specimen_dict['samples_and_zscores'][i], self.samples_zscores_and_specimen_dict['specimen_info'][i], index))
 
-    def __download_and_save_zscores_and_samples(self, donorId):
+    def __download_and_save_zscores_and_samples(self, donor_id):
         """
         Query Allen Brain Api for given set of genes
         """
         base_query_api = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
-        end_query_api = "][donors$eq{}]".format(donorId)
+        end_query_api = "][donors$eq{}]".format(donor_id)
         url = '{}{}{}'.format(base_query_api, probes, end_query_api)
         try:
             response = requests.get(url)
@@ -203,49 +203,49 @@ class Analysis:
         data = text['msg']
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
-        donorPath = os.path.join(self.cache_dir, donorId)
-        if not os.path.exists(donorPath):
-            os.makedirs(donorPath)
+        donor_path = os.path.join(self.cache_dir, donor_id)
+        if not os.path.exists(donor_path):
+            os.makedirs(donor_path)
 
         zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(len(data['probes']))] for j in range(len(data['samples']))])
 
-        with open(os.path.join(donorPath, 'zscores.txt'), 'wb') as f:
+        with open(os.path.join(donor_path, 'zscores.txt'), 'wb') as f:
             np.savetxt(f, zscores, fmt = '%.5f')
-        with open(os.path.join(donorPath, 'samples.txt'), 'w') as outfile:
+        with open(os.path.join(donor_path, 'samples.txt'), 'w') as outfile:
             json.dump(data['samples'], outfile)
-        with open(os.path.join(donorPath, 'probes.txt'), 'w') as outfile:
+        with open(os.path.join(donor_path, 'probes.txt'), 'w') as outfile:
             json.dump(data['probes'], outfile)
 
         if self.verbose:
-            logging.getLogger(__name__).info('For {} samples_length: {}  probes_length: {} zscores_shape: {} '.format(donorId,len(data['samples']),len(data['probes']), zscores.shape))
+            logging.getLogger(__name__).info('For {} samples_length: {}  probes_length: {} zscores_shape: {} '.format(donor_id,len(data['samples']),len(data['probes']), zscores.shape))
         return {'samples' : data['samples'], 'probes' : data['probes'], 'zscores' : zscores}
 
-    def filter_coordinates_and_zscores(self, img, index_to_allen_brain_api_dict, specimen, index):
+    def filter_coordinates_and_zscores(self, img, index_to_samples_zscores_and_specimen_dict, specimen, index):
         """
         Populate self.filtered_coords_and_zscores with zscores and coords for samples which belong to a particular specimen and spatially represented in the given voi.
         """
-        revised_allen_brain_api_dict = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
-        revised_allen_brain_api_dict['name'] = 'img{}'.format(str(index+1))
+        revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
+        revised_samples_zscores_and_specimen_dict['name'] = 'img{}'.format(str(index+1))
         img_arr = img.get_data()
         invimgMni = inv(img.affine)
         T = np.dot(invimgMni, specimen['alignment3d'])
-        coords = transform_samples_MRI_to_MNI52(index_to_allen_brain_api_dict['samples'], T)
+        coords = transform_samples_MRI_to_MNI52(index_to_samples_zscores_and_specimen_dict['samples'], T)
         coords = (np.rint(coords)).astype(int)
         #How to use numpy.where
         coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or img_arr[coord[0],coord[1],coord[2]] <= self.filter_threshold or img_arr[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
-        revised_allen_brain_api_dict['coords'] = [coord for coord in coords if (coord > 0).sum() == 3]
-        revised_allen_brain_api_dict['zscores'] = [zscore for (coord, zscore) in zip(coords, index_to_allen_brain_api_dict['zscores']) if (coord > 0).sum() == 3]
-        revised_allen_brain_api_dict['specimen'] = specimen['name']
-        return revised_allen_brain_api_dict
+        revised_samples_zscores_and_specimen_dict['coords'] = [coord for coord in coords if (coord > 0).sum() == 3]
+        revised_samples_zscores_and_specimen_dict['zscores'] = [zscore for (coord, zscore) in zip(coords, index_to_samples_zscores_and_specimen_dict['zscores']) if (coord > 0).sum() == 3]
+        revised_samples_zscores_and_specimen_dict['specimen'] = specimen['name']
+        return revised_samples_zscores_and_specimen_dict
 
 
-    def __download_and_save_zscores_and_samples_partial(self, donorId):
+    def __download_and_save_zscores_and_samples_partial(self, donor_id):
         """
         Query Allen Brain Api for the given set of genes if they have not already been downloaded to gene_cache and save them on disk
         """
         base_url_download_and_save_zscores_samples_partial = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
-        end_url_download_and_save_zscores_samples_partial = "][donors$eq{}]".format(donorId)
+        end_url_download_and_save_zscores_samples_partial = "][donors$eq{}]".format(donor_id)
         url = '{}{}{}'.format(base_url_download_and_save_zscores_samples_partial, probes, end_url_download_and_save_zscores_samples_partial)
         try:
             text = requests.get(url).json()
@@ -255,27 +255,27 @@ class Analysis:
         data = text['msg']
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
-        donorpath = os.path.join(self.cache_dir, donorId)
-        if not os.path.exists(donorpath):
-            os.makedirs(donorpath)
+        donor_path = os.path.join(self.cache_dir, donor_id)
+        if not os.path.exists(donor_path):
+            os.makedirs(donor_path)
         probes = data['probes']
         zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(len(data['probes']))] for j in range(len(data['samples']))])
         #READ PROBES
-        with open(os.path.join(donorpath, 'probes.txt'), 'r') as f:
-            probesC = json.load(f)
+        with open(os.path.join(donor_path, 'probes.txt'), 'r') as f:
+            probes_cached = json.load(f)
         #READ ZSCORES
-        with open(os.path.join(donorpath, 'zscores.txt'), 'r') as f:
-            zscoresC = np.loadtxt(f)
+        with open(os.path.join(donor_path, 'zscores.txt'), 'r') as f:
+            zscores_cached = np.loadtxt(f)
         #WRITE SAMPLES
-        with open(os.path.join(donorpath, 'samples.txt'), 'w') as outfile:
+        with open(os.path.join(donor_path, 'samples.txt'), 'w') as outfile:
             json.dump(data['samples'], outfile)
         #READ AND WRITE PROBES
-        probes = probesC + probes       
-        with open(os.path.join(donorpath, 'probes.txt'), 'w') as outfile:
+        probes = probes_cached + probes
+        with open(os.path.join(donor_path, 'probes.txt'), 'w') as outfile:
             json.dump(probes, outfile)
         #WRITE ZSCORES
-        zscores = np.append(zscoresC, zscores, axis=1)      
-        np.savetxt(os.path.join(donorpath, 'zscores.txt'), zscores)
+        zscores = np.append(zscores_cached, zscores, axis=1)
+        np.savetxt(os.path.join(donor_path, 'zscores.txt'), zscores)
 
     def download_and_save_specimens(self):
         """
@@ -285,7 +285,7 @@ class Analysis:
         base_url_download_specimens = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"
         end_url_download_specimens = "']&include=alignment3d"
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
-        self.allen_brain_api_dict['specimen_info'] = []
+        self.samples_zscores_and_specimen_dict['specimen_info'] = []
         for specimen_id in specimens:
             url = '{}{}{}'.format(base_url_download_specimens, specimen_id, end_url_download_specimens)
             try:
@@ -293,11 +293,11 @@ class Analysis:
             except requests.exceptions.RequestException as e:
                 logging.getLogger(__name__).info(e)
                 raise
-            self.allen_brain_api_dict['specimen_info'] = self.allen_brain_api_dict['specimen_info'] + [get_specimen_data(text['msg'][0])]
+            self.samples_zscores_and_specimen_dict['specimen_info'] = self.samples_zscores_and_specimen_dict['specimen_info'] + [get_specimen_data(text['msg'][0])]
         if self.verbose:
-            logging.getLogger(__name__).info('{}'.format(self.allen_brain_api_dict['specimen_info']))
+            logging.getLogger(__name__).info('{}'.format(self.samples_zscores_and_specimen_dict['specimen_info']))
 
-        for donor, specimen in zip(self.donor_ids, self.allen_brain_api_dict['specimen_info']):
+        for donor, specimen in zip(self.donor_ids, self.samples_zscores_and_specimen_dict['specimen_info']):
             with open(os.path.join(self.cache_dir, '{}/specimenName.txt'.format(donor)), 'w') as outfile:
                 outfile.write(specimen['name'])
             np.savetxt(os.path.join(self.cache_dir, '{}/specimenMat.txt'.format(donor)), specimen['alignment3d'])
@@ -305,9 +305,9 @@ class Analysis:
 
     def download_and_save_zscores_and_samples(self):
         """
-        Loop through the donors and call download_and_save_zscores_samples() and populate allen_brain_api_dict
+        Loop through the donors and call download_and_save_zscores_samples() and populate samples_zscores_and_specimen_dict
         """
-        self.allen_brain_api_dict['samples_and_zscores'] = [self.__download_and_save_zscores_and_samples(donor) for donor in self.donor_ids]
+        self.samples_zscores_and_specimen_dict['samples_and_zscores'] = [self.__download_and_save_zscores_and_samples(donor) for donor in self.donor_ids]
 
     def download_and_save_zscores_samples_and_specimen_data(self):
         """
@@ -324,7 +324,7 @@ class Analysis:
         donorprobe = os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0]))
         """
         If the cache doesnt exist then get all the probes associated with the genes and download and save the api and specimen information
-        and populate allen_brain_api_dict['samples_and_zscores'] and allen_brain_api_data['specimen_info'].
+        and populate samples_zscores_and_specimen_dict['samples_and_zscores'] and allen_brain_api_data['specimen_info'].
         """
         if not os.path.exists(self.cache_dir):
             self.gene_list_to_download = self.gene_list[:]
@@ -334,11 +334,11 @@ class Analysis:
             """
             If the cache exists there are two possibilities.
             a) All the requested genes are present in the cache. In that case, read the downloaded api and specimen data from disk and
-            populate allen_brain_api_dict['samples_and_zscores'] and allen_brain_api_dict['specimen_info']
+            populate samples_zscores_and_specimen_dict['samples_and_zscores'] and samples_zscores_and_specimen_dict['specimen_info']
             b) A few of the requested genes are present in the cache. In that case, read the downloaded api and specimen data from disk and
-            populate allen_brain_api_dict['samples_and_zscores'] and allen_brain_api_dict['specimen_info'] for genes already present in the cache. For the rest, get all the probes
-            associated with the genes, download and save the api and specimen information and populate allen_brain_api_dict['samples_and_zscores'] and
-            allen_brain_api_dict['specimen_info'].
+            populate samples_zscores_and_specimen_dict['samples_and_zscores'] and samples_zscores_and_specimen_dict['specimen_info'] for genes already present in the cache. For the rest, get all the probes
+            associated with the genes, download and save the api and specimen information and populate samples_zscores_and_specimen_dict['samples_and_zscores'] and
+            samples_zscores_and_specimen_dict['specimen_info'].
             """
             self.gene_list_to_download = [key for key in self.gene_list if key not in self.gene_cache.keys()]
             if self.gene_list_to_download:
