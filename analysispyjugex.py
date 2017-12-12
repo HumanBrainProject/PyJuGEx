@@ -20,9 +20,21 @@ import multiprocessing
 import nibabel as nib
 import logging
 
+"""
+Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package.
+Example:
+    $ python driver.py
+"""
+
 def get_specimen_data(specimen_metadata):
     """
-    For each specimen, extract the name and alignment matrix and put into a dict object
+    For each specimen, extract the name and alignment matrix and stores a dict
+    Args:
+          specimen_metadata (dict): Contains metadata for specimens used in Allen Brain. They can be downloaded through Allen Brain API.
+    Returns:
+          dict: specimen dict with two keys -
+                a) name: name of the specimen
+                b) alignment3d: transformation matrix to convert from MRI to MNI52 space.
     """
     specimen = dict()
     specimen['name'] = specimen_metadata['name']
@@ -37,6 +49,11 @@ def get_specimen_data(specimen_metadata):
 def transform_samples_MRI_to_MNI52(samples, transformation_mat):
     """
     Convert the MRI coordinates of samples to MNI152 space
+    Args:
+          samples (dict): Contains mri coordinates for each sample used in Allen Brain.
+          transformation_mat (numpy.ndarray): A 4x4 numpy array to convert the above mentioned MRI coordinates to MNI52 space.
+    Returns:
+          numpy.ndarray: A two dimensional numpy array where each row represents a three dimensional coordinate in MNI52 space.
     """
     np_T = np.array(transformation_mat[0:3, 0:4])
     mri = np.vstack(s['sample']['mri'] for s in samples)
@@ -48,29 +65,40 @@ def transform_samples_MRI_to_MNI52(samples, transformation_mat):
     return coords
 
 def unwrap_self_do_anova_with_permutation_rep(arg, **kwarg):
+    """
+    Helper function to enable usage of the multiprocessing module inside a class.
+    Args:
+          *args: Variable length argument list.
+          **kwargs: Arbitrary keyword arguments.
+    Returns:
+
+    """
     return Analysis.do_anova_with_permutation_rep(*arg, **kwarg)
 
 class Analysis:
 
-    def __init__(self, gene_cache, verbose=False):
+    def __init__(self, gene_cache_dir, verbose=False):
         """
-        initialize_anova_factors the Analysis class with various internal variables -
-
-        probe_ids = list of probe ids associated with the give list of genes which are not present in gene_cache, if it exists.
-        gene_list = given list of genes
-        gene_list_to_download = list of genes whose information is not in the cache yet, needs to be downloaded
-        gene_symbols = same length as probe_ids, each probe is represented with the corresponding genesymbol, used by get_mean_zscores()
-        gene_cache = dictionary to indicate which keys are present in the cache
-        donor_ids = six donor ids of Allen Brain API
-        allen_brain_api_data = dictionary to store Allen Brain API data, with two keys - samples_and_zscores contain samples and zscores from allen brain  api for all the given probes and specimen_info contains age, race, sex of the six donors represented by donor_ids
-        rois = list of two nii volumes for each region of interest
-        filtered_coords_and_zscores = Internal variable for storing MNI52 coordinates and zscores corresponsing to each region of interest.
-        filter_threshold = Internal variable used at filter_coordinates_and_zscores() to select or reject a sample
-        n_rep = number of iterations of FWE correction
-        cache = Disk location where data from Allen Brain API has been downloaded and stored.
-        anova_factors = Internal variable used by the ANOVA module - contains five keys - 'Age', 'Race', 'Specimen', 'Area', 'Zscores'
-        genesymbol_and_mean_zscores = dictionary with two keys - uniqueid, combinedzscores where each gene and the winsorzed mean zscores over all probes associated with that gene is stored
-        gene_id_and_pvalues = dict for storing gene ids and associated p values.
+        Initialize the Analysis class with various internal variables -
+        Args:
+            gene_cache_dir (str): Disk location where the gene and specimen data, downloaded from Allen Brain API, will be cached for future reuse.
+            verbose (bool): True for verbose output during execution of the code.
+        Attributes:
+            probe_ids (list) : list of probe ids associated with the given list of genesymbols which are not present in gene_cache, if it exists.
+            gene_list (list) : list of genesymbols to perform differential analysis with, provided by the user.
+            gene_list_to_download (list) : list of genesymbols whose information is not in the cache yet, needs to be downloaded.
+            gene_symbols (list) :  same length as probe_ids, each probe is represented with the corresponding genesymbol, used by get_mean_zscores().
+            gene_cache (dict) :  dictionary to indicate which genes are present in the cache.
+            donor_ids (list) :  six donor ids of Allen Brain API.
+            allen_brain_api_data (dict) : dictionary to store Allen Brain API data, with two keys - samples_and_zscores contain samples and zscores from allen brain  api for all the given probes and specimen_info contains age, race, sex of the six donors represented by donor_ids.
+            rois (list) : list of two nii volumes for each region of interest used in differential analysis.
+            filtered_coords_and_zscores (list) : internal variable for storing MNI52 coordinates and zscores corresponsing to each region of interest.
+            filter_threshold (float) : internal variable used at filter_coordinates_and_zscores() to select or reject a sample.
+            n_rep (int) : number of iterations of FWE correction.
+            cache (str) : disk location where data from Allen Brain API has been downloaded and stored.
+            anova_factors (dict) : internal dictionary used by the ANOVA module - contains five keys - 'Age', 'Race', 'Specimen', 'Area', 'Zscores'.
+            genesymbol_and_mean_zscores (dict) : dictionary with two keys - uniqueid, combinedzscores where each gene and the winsorzed mean zscores over all probes associated with that gene is stored.
+            gene_id_and_pvalues (dict) : dict for storing gene ids and associated p values.
         """
         self.probe_ids = []
         self.gene_list = []
@@ -86,7 +114,7 @@ class Analysis:
         self.filtered_coords_and_zscores = []
         self.filter_threshold = 0.2
         self.n_rep = 1000
-        self.cache_dir = gene_cache
+        self.cache_dir = gene_cache_dir
         self.verbose = verbose
         self.anova_factors = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])
@@ -109,6 +137,12 @@ class Analysis:
     def DifferentialAnalysis(self, gene_list, roi1, roi2):
         """
         Driver routine
+        Args:
+              gene_list (list): list of gene symbols to perform differential analysis with, provided by the user.
+              roi1 (nibabel.nifti1.Nifti1Image): Nifti1Image representing the probability map of the first region of interest, chosen by the user.
+              roi2 (nibabel.nifti1.Nifti1Image): Nifti1Image representing the probability map of the second region of interest, chosen by the user.
+        Returns:
+             dict: A dictionary representing the gene symbols and their corresponding p values
         """
         if not gene_list:
             raise ValueError('Atleast one gene is needed for the analysis')
@@ -123,8 +157,7 @@ class Analysis:
 
     def create_gene_cache(self):
         """
-        Create a dictionary with an entry for each gene whose api information has been downloaded.
-        We scan self.cache_dir/15496/probes.txt for the gene symbols
+        Create a dictionary with an entry for each gene whose api information has been downloaded. We scan self.cache_dir/15496/probes.txt for the gene symbols.
         """
         with open(os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0])), 'r') as f:
             probes = json.load(f)
@@ -180,18 +213,25 @@ class Analysis:
             if self.verbose:
                 logging.getLogger(__name__).info('inside readcachedata {}, {}'.format(len(self.samples_zscores_and_specimen_dict['samples_and_zscores'][-1]['samples']), self.samples_zscores_and_specimen_dict['samples_and_zscores'][-1]['zscores'].shape))
 
-    def set_roi_MNI152(self, voi, index):
+    def set_roi_MNI152(self, roi, index):
         """
-        For each specimen and for the given voi populate self.filtered_coords_and_zscores with zscores and valid coordinates
+        For each specimen and for the given roi populate self.filtered_coords_and_zscores with zscores and valid coordinates
+        Args:
+              roi (nib.nifti1.Nifti1Image): probability map of a region of interest.
+              index (int): 0 or 1, representing which region of interest it is.
         """
         if index < 0 or index > 1:
             raise ValueError('only 0 and 1 are valid choices')
         for i in range(len(self.samples_zscores_and_specimen_dict['specimen_info'])):
-            self.filtered_coords_and_zscores.append(self.filter_coordinates_and_zscores(voi, self.samples_zscores_and_specimen_dict['samples_and_zscores'][i], self.samples_zscores_and_specimen_dict['specimen_info'][i], index))
+            self.filtered_coords_and_zscores.append(self.filter_coordinates_and_zscores(roi, self.samples_zscores_and_specimen_dict['samples_and_zscores'][i], self.samples_zscores_and_specimen_dict['specimen_info'][i], index))
 
     def __download_and_save_zscores_and_samples(self, donor_id):
         """
-        Query Allen Brain Api for given set of genes
+        Query Allen Brain Api for given set of genes for the donor given by donor_id
+        Args:
+              donor_id (int): Id of a donor which is used to query Allen Brain API.
+        Returns:
+                dict: A dictionary representing the just downloaded samples, probes and zscores for the given donor_id and the probes given by self.probe_ids.
         """
         base_query_api = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
@@ -223,15 +263,26 @@ class Analysis:
             logging.getLogger(__name__).info('For {} samples_length: {}  probes_length: {} zscores_shape: {} '.format(donor_id,len(data['samples']),len(data['probes']), zscores.shape))
         return {'samples' : data['samples'], 'probes' : data['probes'], 'zscores' : zscores}
 
-    def filter_coordinates_and_zscores(self, img, index_to_samples_zscores_and_specimen_dict, specimen, index):
+    def filter_coordinates_and_zscores(self, roi, index_to_samples_zscores_and_specimen_dict, specimen, index):
         """
-        Populate self.filtered_coords_and_zscores with zscores and coords for samples which belong to a particular specimen and spatially represented in the given voi.
+        Populate self.filtered_coords_and_zscores with zscores and coords for samples which belong to a particular specimen and spatially represented in the given roi.
+        Args:
+              roi (nib.nifti1.Nifti1Image): probability map of a region of interest.
+              index_to_samples_zscores_and_specimen_dict (dict): Index into samples_zscores_and_specimen_dict
+              specimen (dict): dictionary representing a specimen with its name and transformation matrix as keys
+              index (int): 0 or 1, representing which region of interest it is.
+        Returns:
+                dict : Contains the following keys -
+                       a) zscores - Lists of zscore corresponding to the Allen Brain coordinates (in MNI52 space) which are spatially represented in region of interest given by roi parameter.
+                       b) coords - Lists of Allen Brain coordinates (in MNI52 space) which are spatially represented in region of interest given by roi parameter.
+                       c) specimen - same as specimen['name'].
+                       d) name - 'img1' representing first region of interest, 'img2' representing second region of interest.
         """
         revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
         revised_samples_zscores_and_specimen_dict['name'] = 'img{}'.format(str(index+1))
-        img_arr = img.get_data()
-        invimgMni = inv(img.affine)
-        T = np.dot(invimgMni, specimen['alignment3d'])
+        img_arr = roi.get_data()
+        invroiMni = inv(roi.affine)
+        T = np.dot(invroiMni, specimen['alignment3d'])
         coords = transform_samples_MRI_to_MNI52(index_to_samples_zscores_and_specimen_dict['samples'], T)
         coords = (np.rint(coords)).astype(int)
         #How to use numpy.where
@@ -245,6 +296,8 @@ class Analysis:
     def __download_and_save_zscores_and_samples_partial(self, donor_id):
         """
         Query Allen Brain Api for the given set of genes if they have not already been downloaded to gene_cache and save them on disk
+        Args:
+              donor_id (int): Id of a donor which is used to query Allen Brain API.
         """
         base_url_download_and_save_zscores_samples_partial = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
         probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
@@ -321,20 +374,22 @@ class Analysis:
 
     def set_candidate_genes(self, gene_list):
         """
-        Set list of genes and prepare to read/download data for them.
+        Set list of genesymbols and prepare to read/download data for them.
+        Args:
+              gene_list (list) : list of genesymbols to perform differential analysis with, provided by the user.
         """
         self.gene_list = gene_list
         donorprobe = os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0]))
-        """
+        '''
         If the cache doesnt exist then get all the probes associated with the genes and download and save the api and specimen information
         and populate samples_zscores_and_specimen_dict['samples_and_zscores'] and allen_brain_api_data['specimen_info'].
-        """
+        '''
         if not os.path.exists(self.cache_dir):
             self.gene_list_to_download = self.gene_list[:]
             self.retrieve_probe_ids()
             self.download_and_save_zscores_samples_and_specimen_data()
         else:
-            """
+            '''
             If the cache exists there are two possibilities.
             a) All the requested genes are present in the cache. In that case, read the downloaded api and specimen data from disk and
             populate samples_zscores_and_specimen_dict['samples_and_zscores'] and samples_zscores_and_specimen_dict['specimen_info']
@@ -342,7 +397,7 @@ class Analysis:
             populate samples_zscores_and_specimen_dict['samples_and_zscores'] and samples_zscores_and_specimen_dict['specimen_info'] for genes already present in the cache. For the rest, get all the probes
             associated with the genes, download and save the api and specimen information and populate samples_zscores_and_specimen_dict['samples_and_zscores'] and
             samples_zscores_and_specimen_dict['specimen_info'].
-            """
+            '''
             self.gene_list_to_download = [key for key in self.gene_list if key not in self.gene_cache.keys()]
             if self.gene_list_to_download:
                 print('Microarray expression values of',len(self.gene_list_to_download),'gene(s) need(s) to be downloaded')
@@ -358,8 +413,9 @@ class Analysis:
     def get_mean_zscores(self, combined_zscores):
         """
         Compute Winsorzed mean of zscores over all probes associated with a given gene. combined_zscores have zscores for all the probes and all the valid coordinates.
-        As a gene_id_and_pvalues you get a numpy array of size len(self.filtered_coords_and_zscores)xlen(self.gene_list). self.genesymbol_and_mean_zscores['combined_zscores'][i][j] returns the winsorzed mean of
-        jth gene taken over all the probes corresponding to the ith valid sample.
+        As a gene_id_and_pvalues you get a numpy array of size len(self.filtered_coords_and_zscores)xlen(self.gene_list). self.genesymbol_and_mean_zscores['combined_zscores'][i][j] returns the     winsorzed mean of jth gene taken over all the probes corresponding to the ith valid sample.
+        Args:
+             combined_zscores (list): lists of zscores corresponding to each region of interest, populated from filtered_coords_and_zscores
         """
         unique_gene_symbols = np.unique(self.gene_symbols)
         '''
@@ -415,15 +471,29 @@ class Analysis:
             #F_vec_ref_anovan is used as an initial condition to F_mat_perm_anovan in fwe_correction
             self.F_vec_ref_anovan[i] = aov_table['F'][0]
 
-    def do_anova_with_permutation_gene(self, index_to_uniqueId):
+    def do_anova_with_permutation_gene(self, index_to_gene_list):
+        """
+        Perform one repetition of anova for each gene
+        Args:
+              index_to_gene_list (int) : Index into the genesymbol_and_mean_zscores['combined_zscores'] array, representing mean zscore of a gene.
+        Returns:
+                 float: F value extracted from the anova table
+        """
         self.anova_factors['Area'] = np.random.permutation(self.anova_factors['Area'])
-        self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,index_to_uniqueId]
+        self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,index_to_gene_list]
         mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_factors).fit()
         aov_table = sm.stats.anova_lm(mod, typ=1)
         return aov_table['F'][0]
 
     #Pool inside a  pool, is it a good idea?
     def do_anova_with_permutation_rep(self, rep):
+        """
+        Perform one repetition of anova for all genes
+        Args:
+              rep (int): repetition index, an integer between 1 and n_rep.
+        Returns:
+                 list: a list of F_values, one for each gene.
+        """
         F_vec_perm_anovan = list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
         return F_vec_perm_anovan
 
@@ -465,7 +535,9 @@ class Analysis:
 
     def build_specimen_factors(self, cache):
         """
-        Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api and create a dict.
+        Download various factors such as age, name, race, gender of the six specimens from Allen Brain Api, save them at cache/specimenFactors.txt and create a dict.
+        Args:
+             cache (str): Location where the specimen_factors dict will be stored.
         """
         url_build_specimen_factors = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::Donor,rma::criteria,products[id$eq2],rma::include,age,rma::options[only$eq%27donors.id,donors.name,donors.race_only,donors.sex%27]"
         try:
@@ -487,7 +559,9 @@ class Analysis:
 
     def read_specimen_factors(self, cache):
         """
-        Read various factors such as age, name, race, gender of the six specimens from disk.
+        Read various factors such as age, name, race, gender of the six specimens from cache/specimenFactors.txt.
+        Args:
+             cache (str): Location where the specimen_factors dict is stored.
         """
         fileName = os.path.join(cache, 'specimenFactors.txt')
         if not os.path.exists(fileName):
