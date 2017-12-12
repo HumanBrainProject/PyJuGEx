@@ -32,8 +32,7 @@ else:
 
 ## Authors
 
-* **Big Data Analytics Group, INM-1, Research Center Juelich** - *h.bhattacharya@fz-juelich.de* 
-
+* **Big Data Analytics Group, INM-1, Research Center Juelich**
 ## Acknowledgments
 
 * Dr. Sebastian Bludau
