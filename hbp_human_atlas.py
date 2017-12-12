@@ -5,21 +5,8 @@ import nibabel as nib
 import requests
 import tempfile
 import os
+
 dictionaryimages = {}
-'''
-with open('roinames.txt') as f:
-    content = f.readlines()
-content = [x.strip() for x in content]
-url = 'https://hbp-unic.fz-juelich.de:7112/UFTP/rest/access/JUDAC/2f054eee-7fa5-4ed3-b046-2ddc1315fe9c/'
-for c in content:
-    names = c.split('_')
-    roiname = names[-1].split('.')[0]
-    if len(names) > 2:
-        roiname = names[-2] + '_' + names[-1].split('.')[0]
-    else:
-        roiname = names[-1].split('.')[0]
-    dictionaryimages[roiname] = url + c
-'''
 
 dictionaryimages['FP1'] = 'https://hbp-unic.fz-juelich.de:7112/UFTP/rest/access/JUDAC/2f054eee-7fa5-4ed3-b046-2ddc1315fe9c/ba10m_l_N10_nlin2Stdicbm152casym.nii.gz'
 dictionaryimages['FP2'] = 'https://hbp-unic.fz-juelich.de:7112/UFTP/rest/access/JUDAC/2f054eee-7fa5-4ed3-b046-2ddc1315fe9c/ba10p_l_N10_nlin2Stdicbm152casym.nii.gz'
