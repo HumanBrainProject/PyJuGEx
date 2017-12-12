@@ -1,6 +1,15 @@
 # PyJugex
 Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package. 
 
+
+## Dependencies
+* numpy
+* scipy
+* statsmodels
+* requests
+* nibabel
+* xmltodict
+
 ### Installing
 ```
 git clone https://github.com/haimasree/Jugex.git
