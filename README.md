@@ -33,7 +33,7 @@ else:
 ```
 
 ## Versioning
-0.5
+0.1
 
 ## Authors
 
