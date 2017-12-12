@@ -32,7 +32,7 @@ else:
 
 ## Authors
 
-* **Haimasree Bhattacharya** - *h.bhattacharya@fz-juelich.de* 
+* **Big Data Analytics Group, INM-1, Research Center Juelich** - *h.bhattacharya@fz-juelich.de* 
 
 ## Acknowledgments
 
