@@ -362,19 +362,19 @@ class Analysis:
         jth gene taken over all the probes corresponding to the ith valid sample.
         """
         unique_gene_symbols = np.unique(self.gene_symbols)
-        """
+        '''
         A = [a,a,a,b,b,b,c,c]
         B = [a,b,c]
         Following line of code will give  indices = [[0,1,2],[3,4,5],[6,7]]
-        """
+        '''
         indices = [np.where(np.in1d(self.gene_symbols, genesymbol))[0] for genesymbol in unique_gene_symbols]
-        """
+        '''
         for i in range (len(unique_gene_symbols)):
                 for j in range(len(combined_zscores)):
                     for k in range(len(indices[i])):
                         tmp[j] = combined_zscores[j][indices[i][k]][:]
                 winsorzed_mean_zscores[j][i] = np.mean(sp.stats.mstats.winsorize(tmp[j], limits=0.1))
-        """
+        '''
         winsorzed_mean_zscores =  np.array([[np.mean(sp.stats.mstats.winsorize([combined_zscores[j][indices[i][k]] for k in range(0, len(indices[i]))], limits=0.1)) for i in range (len(unique_gene_symbols))] for j in range(len(combined_zscores))])
         self.genesymbol_and_mean_zscores['uniqueId'] = unique_gene_symbols
         self.genesymbol_and_mean_zscores['combined_zscores'] = winsorzed_mean_zscores
