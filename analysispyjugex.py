@@ -47,6 +47,9 @@ def transform_samples_MRI_to_MNI52(samples, transformation_mat):
     coords = coords.transpose()
     return coords
 
+def unwrap_self_do_anova_with_permutation_rep(arg, **kwarg):
+    return Analysis.do_anova_with_permutation_rep(*arg, **kwarg)
+
 class Analysis:
 
     def __init__(self, gene_cache, verbose=False):
@@ -421,8 +424,8 @@ class Analysis:
 
     #Pool inside a  pool, is it a good idea?
     def do_anova_with_permutation_rep(self, rep):
-        self.F_vec_perm_anovan = list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
-        return self.F_vec_perm_anovan
+        F_vec_perm_anovan = list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
+        return F_vec_perm_anovan
 
     def fwe_correction(self):
         """
@@ -431,7 +434,10 @@ class Analysis:
         invn_rep = 1/self.n_rep
         initial_guess_F_vec = self.F_vec_ref_anovan
         pool = multiprocessing.Pool()
-        self.F_mat_perm_anovan = np.array(list(pool.map(self.do_anova_with_permutation_rep, range(1,self.n_rep))))
+        '''
+        self.F_mat_perm_anovan = np.array(pool.map(self.do_anova_with_permutation_rep, range(1,self.n_rep)))
+        '''
+        self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, zip([self]*self.n_rep, range(1,self.n_rep))))
         self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_gene_id_and_pvalues()
 
