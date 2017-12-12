@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 from __future__ import print_function
-import os, glob
+import os
 import numpy as np
 from numpy import *
 import json
