@@ -3,18 +3,14 @@ from __future__ import division
 from __future__ import print_function
 import os
 import numpy as np
-from numpy import *
 import json
 from numpy.linalg import inv
 import scipy as sp
-import scipy.stats.mstats
+from scipy import stats
 import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
-from scipy import stats
-import sys
 import requests, requests.exceptions
-import pandas as pd
 import shutil
 import multiprocessing
 import nibabel as nib
@@ -177,7 +173,6 @@ class Analysis:
             url = '{}{}{}'.format(base_retrieve_probe_ids, gene, end_retrieve_probe_ids)
             if self.verbose:
                 logging.getLogger(__name__).info('url: {}'.format(url))
-                #print(url)
             try:
                 response = requests.get(url)
             except requests.exceptions.RequestException as e:
@@ -495,7 +490,7 @@ class Analysis:
         initial_guess_F_vec = self.F_vec_ref_anovan
         pool = multiprocessing.Pool()
         #self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, zip([self]*self.n_rep, range(1,self.n_rep)) #for parameter
-        self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, [self]*self.n_rep))
+        self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, [self]*(self.n_rep-1)))
         self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_gene_id_and_pvalues()
 
@@ -503,12 +498,10 @@ class Analysis:
         """
         Populate pvalues and geneids for the gene_id_and_pvalues dict after n_rep passes of FWE
         """
-        invn_rep = 1/self.n_rep
         #ref represenets maximum p value for each gene across n_rep repetitions
         max_F_mat_perm_anovan = self.F_mat_perm_anovan.max(1)
         #compute family wise error corrected p value
-#       self.FWE_corrected_p =  [len([1 for a in max_F_mat_perm_anovan if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in max_F_mat_perm_anovan if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
-        self.FWE_corrected_p =  [len([1 for a in max_F_mat_perm_anovan if a >= f])/self.n_rep for f in self.F_vec_ref_anovan]
+        self.FWE_corrected_p =  [np.count_nonzero(max_F_mat_perm_anovan >= f)/self.n_rep for f in self.F_vec_ref_anovan]
         self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
         if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
