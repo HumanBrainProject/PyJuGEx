@@ -19,7 +19,7 @@ import shutil
 import multiprocessing
 import nibabel as nib
 import logging
-
+from joblib import Parallel, delayed
 """
 Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package.
 Example:
@@ -316,20 +316,15 @@ class Analysis:
             os.makedirs(donor_path)
         probes = data['probes']
         zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(len(data['probes']))] for j in range(len(data['samples']))])
-        #READ PROBES
         with open(os.path.join(donor_path, 'probes.txt'), 'r') as f:
             probes_cached = json.load(f)
-        #READ ZSCORES
         with open(os.path.join(donor_path, 'zscores.txt'), 'r') as f:
             zscores_cached = np.loadtxt(f)
-        #WRITE SAMPLES
         with open(os.path.join(donor_path, 'samples.txt'), 'w') as outfile:
             json.dump(data['samples'], outfile)
-        #READ AND WRITE PROBES
         probes = probes_cached + probes
         with open(os.path.join(donor_path, 'probes.txt'), 'w') as outfile:
             json.dump(probes, outfile)
-        #WRITE ZSCORES
         zscores = np.append(zscores_cached, zscores, axis=1)
         np.savetxt(os.path.join(donor_path, 'zscores.txt'), zscores)
 
@@ -485,8 +480,7 @@ class Analysis:
         aov_table = sm.stats.anova_lm(mod, typ=1)
         return aov_table['F'][0]
 
-    #Pool inside a  pool, is it a good idea?
-    def do_anova_with_permutation_rep(self, rep):
+    def do_anova_with_permutation_rep(self):
         """
         Perform one repetition of anova for all genes
         Args:
@@ -494,8 +488,8 @@ class Analysis:
         Returns:
                  list: a list of F_values, one for each gene.
         """
-        F_vec_perm_anovan = list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
-        return F_vec_perm_anovan
+        return list(map(self.do_anova_with_permutation_gene, range(0,self.n_genes)))
+
 
     def fwe_correction(self):
         """
@@ -504,10 +498,12 @@ class Analysis:
         invn_rep = 1/self.n_rep
         initial_guess_F_vec = self.F_vec_ref_anovan
         pool = multiprocessing.Pool()
-        '''
-        self.F_mat_perm_anovan = np.array(pool.map(self.do_anova_with_permutation_rep, range(1,self.n_rep)))
-        '''
-        self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, zip([self]*self.n_rep, range(1,self.n_rep))))
+        #self.F_mat_perm_anovan = np.array(pool.map(self.do_anova_with_permutation_rep, range(1,self.n_rep)))
+        #self.F_mat_perm_anovan = np.array([self.do_anova_with_permutation_rep() for _ in range(1,self.n_rep)])
+        #self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, zip([self]*self.n_rep, range(1,self.n_rep))))
+        #self.F_mat_perm_anovan = np.array([pool.apply(self.do_anova_with_permutation_rep, args=()) for _ in range(1,self.n_rep)])
+        pool_queue =[pool.apply_async(self.do_anova_with_permutation_rep, args=()) for _ in range(1,self.n_rep)]
+        self.F_mat_perm_anovan = np.array([p.get() for p in pool_queue])
         self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_gene_id_and_pvalues()
 
