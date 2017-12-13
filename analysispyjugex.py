@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-from __future__ import print_function
 import os
 import numpy as np
 import json
-from numpy.linalg import inv
 import scipy as sp
-from scipy import stats
 import xmltodict
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
@@ -69,6 +66,7 @@ def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
               do_anova_with_permutation_rep()
     """
     return Analysis.do_anova_with_permutation_rep(*args, **kwargs)
+
 
 class Analysis:
 
@@ -275,7 +273,7 @@ class Analysis:
         revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
         revised_samples_zscores_and_specimen_dict['name'] = 'img{}'.format(str(index+1))
         img_arr = roi.get_data()
-        invroiMni = inv(roi.affine)
+        invroiMni = np.linalg.inv(roi.affine)
         T = np.dot(invroiMni, specimen['alignment3d'])
         coords = transform_samples_MRI_to_MNI52(index_to_samples_zscores_and_specimen_dict['samples'], T)
         coords = (np.rint(coords)).astype(int)
@@ -389,7 +387,7 @@ class Analysis:
             '''
             self.gene_list_to_download = [key for key in self.gene_list if key not in self.gene_cache.keys()]
             if self.gene_list_to_download:
-                print('Microarray expression values of',len(self.gene_list_to_download),'gene(s) need(s) to be downloaded')
+                logging.getLogger(__name__).info('Microarray expression values of {} gene(s) need(s) to be downloaded'.format(len(self.gene_list_to_download)))
             if self.verbose:
                 logging.getLogger(__name__).info('genes to be downloaded:{} '.format(self.gene_list_to_download))
             self.retrieve_probe_ids()
@@ -494,14 +492,25 @@ class Analysis:
         self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_gene_id_and_pvalues()
 
+    def div_func(self, arr):
+        """
+        Helper function to compute average F-value, averaged over self.n_rep for each gene
+        Args:
+              arr (numpy.ndarray) : F-values for all the repetition for a single gene
+        Returns:
+                float: average F-value for that gene
+        """
+        return np.count_nonzero(arr)/self.n_rep
+
     def accumulate_gene_id_and_pvalues(self):
         """
         Populate pvalues and geneids for the gene_id_and_pvalues dict after n_rep passes of FWE
         """
         #ref represenets maximum p value for each gene across n_rep repetitions
-        max_F_mat_perm_anovan = self.F_mat_perm_anovan.max(1)
         #compute family wise error corrected p value
-        self.FWE_corrected_p =  [np.count_nonzero(max_F_mat_perm_anovan >= f)/self.n_rep for f in self.F_vec_ref_anovan]
+        self.FWE_corrected_p = np.apply_along_axis(self.div_func, 0, self.F_mat_perm_anovan.max(1)[:, np.newaxis] >= np.array(self.F_vec_ref_anovan))
+        #self.FWE_corrected_p =  [np.count_nonzero(max_F_mat_perm_anovan >= f)/self.n_rep for f in self.F_vec_ref_anovan]
+
         self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
         if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
