@@ -19,7 +19,6 @@ import shutil
 import multiprocessing
 import nibabel as nib
 import logging
-from joblib import Parallel, delayed
 """
 Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package.
 Example:
@@ -64,16 +63,16 @@ def transform_samples_MRI_to_MNI52(samples, transformation_mat):
     coords = coords.transpose()
     return coords
 
-def unwrap_self_do_anova_with_permutation_rep(arg, **kwarg):
+def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
     """
     Helper function to enable usage of the multiprocessing module inside a class.
     Args:
           *args: Variable length argument list.
           **kwargs: Arbitrary keyword arguments.
     Returns:
-
+              do_anova_with_permutation_rep()
     """
-    return Analysis.do_anova_with_permutation_rep(*arg, **kwarg)
+    return Analysis.do_anova_with_permutation_rep(*args, **kwargs)
 
 class Analysis:
 
@@ -441,7 +440,6 @@ class Analysis:
             logging.getLogger(__name__).info("number of specimens: {} name: {}".format(len(self.specimen_factors), len(self.specimen_factors['name'])))
         #Populates self.genesymbol_and_mean_zscores (uniqueid and zscores)
         self.get_mean_zscores(combined_zscores)
-
         self.n_genes = len(self.genesymbol_and_mean_zscores['combined_zscores'][0])
         self.anova_factors['Area'] = [roi_coord_and_zscore['name'] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         self.anova_factors['Specimen'] = [roi_coord_and_zscore['specimen'] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
@@ -483,8 +481,6 @@ class Analysis:
     def do_anova_with_permutation_rep(self):
         """
         Perform one repetition of anova for all genes
-        Args:
-              rep (int): repetition index, an integer between 1 and n_rep.
         Returns:
                  list: a list of F_values, one for each gene.
         """
@@ -498,12 +494,8 @@ class Analysis:
         invn_rep = 1/self.n_rep
         initial_guess_F_vec = self.F_vec_ref_anovan
         pool = multiprocessing.Pool()
-        #self.F_mat_perm_anovan = np.array(pool.map(self.do_anova_with_permutation_rep, range(1,self.n_rep)))
-        #self.F_mat_perm_anovan = np.array([self.do_anova_with_permutation_rep() for _ in range(1,self.n_rep)])
-        #self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, zip([self]*self.n_rep, range(1,self.n_rep))))
-        #self.F_mat_perm_anovan = np.array([pool.apply(self.do_anova_with_permutation_rep, args=()) for _ in range(1,self.n_rep)])
-        pool_queue =[pool.apply_async(self.do_anova_with_permutation_rep, args=()) for _ in range(1,self.n_rep)]
-        self.F_mat_perm_anovan = np.array([p.get() for p in pool_queue])
+        #self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, zip([self]*self.n_rep, range(1,self.n_rep)) #for parameter
+        self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, [self]*self.n_rep))
         self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
         self.accumulate_gene_id_and_pvalues()
 
@@ -515,7 +507,8 @@ class Analysis:
         #ref represenets maximum p value for each gene across n_rep repetitions
         max_F_mat_perm_anovan = self.F_mat_perm_anovan.max(1)
         #compute family wise error corrected p value
-        self.FWE_corrected_p =  [len([1 for a in max_F_mat_perm_anovan if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in max_F_mat_perm_anovan if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
+#       self.FWE_corrected_p =  [len([1 for a in max_F_mat_perm_anovan if a >= f])/self.n_rep if sys.version_info[0] >= 3 else len([1 for a in max_F_mat_perm_anovan if a >= f])*invn_rep for f in self.F_vec_ref_anovan]
+        self.FWE_corrected_p =  [len([1 for a in max_F_mat_perm_anovan if a >= f])/self.n_rep for f in self.F_vec_ref_anovan]
         self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
         if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
