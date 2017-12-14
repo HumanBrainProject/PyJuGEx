@@ -13,7 +13,7 @@ Find a set of differentially expressed genes between two user defined volumes of
 ### Installing
 ```
 git clone -b webjugex https://github.com/haimasree/Jugex.git
-git clone https://github.com/xgui3783/ws_filewatcher.git
+git clone https://github.com/haimasree/ws_filewatcher.git
 cd ws_filewatcher
 npm i
 ```
