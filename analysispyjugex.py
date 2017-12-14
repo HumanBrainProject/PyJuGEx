@@ -26,7 +26,7 @@ def get_specimen_data(specimen_metadata):
     Returns:
           dict: specimen dict with two keys -
                 a) name: name of the specimen
-                b) alignment3d: transformation matrix to convert from MRI to MNI52 space.
+                b) alignment3d: transformation matrix to convert from MRI to MNI152 space.
     """
     specimen = dict()
     specimen['name'] = specimen_metadata['name']
@@ -38,14 +38,14 @@ def get_specimen_data(specimen_metadata):
     [0, 0, 0, 1]])
     return specimen
 
-def transform_samples_MRI_to_MNI52(samples, transformation_mat):
+def transform_samples_MRI_to_MNI152(samples, transformation_mat):
     """
     Convert the MRI coordinates of samples to MNI152 space
     Args:
           samples (dict): Contains mri coordinates for each sample used in Allen Brain.
-          transformation_mat (numpy.ndarray): A 4x4 numpy array to convert the above mentioned MRI coordinates to MNI52 space.
+          transformation_mat (numpy.ndarray): A 4x4 numpy array to convert the above mentioned MRI coordinates to MNI152 space.
     Returns:
-          numpy.ndarray: A two dimensional numpy array where each row represents a three dimensional coordinate in MNI52 space.
+          numpy.ndarray: A two dimensional numpy array where each row represents a three dimensional coordinate in MNI152 space.
     """
     np_T = np.array(transformation_mat[0:3, 0:4])
     mri = np.vstack(s['sample']['mri'] for s in samples)
@@ -85,7 +85,7 @@ class Analysis:
             donor_ids (list) :  six donor ids of Allen Brain API.
             allen_brain_api_data (dict) : dictionary to store Allen Brain API data, with two keys - samples_and_zscores contain samples and zscores from allen brain  api for all the given probes and specimen_info contains age, race, sex of the six donors represented by donor_ids.
             rois (list) : list of two nii volumes for each region of interest used in differential analysis.
-            filtered_coords_and_zscores (list) : internal variable for storing MNI52 coordinates and zscores corresponsing to each region of interest.
+            filtered_coords_and_zscores (list) : internal variable for storing MNI152 coordinates and zscores corresponsing to each region of interest.
             filter_threshold (float) : internal variable used at filter_coordinates_and_zscores() to select or reject a sample.
             n_rep (int) : number of iterations of FWE correction.
             cache (str) : disk location where data from Allen Brain API has been downloaded and stored.
@@ -110,7 +110,8 @@ class Analysis:
         self.cache_dir = gene_cache_dir
         self.verbose = verbose
         self.anova_factors = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
-        self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])
+        self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])        
+        self.result_for_web_version = []
         logging.basicConfig(level=logging.INFO)
         '''
         Removes any folder that has not been written to properly, most likely due to force quit
@@ -139,14 +140,15 @@ class Analysis:
         """
         if not gene_list:
             raise ValueError('Atleast one gene is needed for the analysis')
-        if not (isinstance(roi1, nib.nifti1.Nifti1Image) or isinstance(roi2, nib.nifti1.Nifti1Image)):
+        if not (isinstance(roi1['data'], nib.nifti1.Nifti1Image) or isinstance(roi2['data'], nib.nifti1.Nifti1Image)):
             raise ValueError('Atleast two valid regions of interest are needed')
         self.set_candidate_genes(gene_list)
         self.set_roi_MNI152(roi1, 0)
         self.set_roi_MNI152(roi2, 1)
         logging.getLogger(__name__).info('Starting the analysis. This may take some time.....')
         self.anova()
-        return self.gene_id_and_pvalues
+        #return self.gene_id_and_pvalues
+        return json.dumps(self.result_for_web_version)
 
     def create_gene_cache(self):
         """
@@ -265,17 +267,18 @@ class Analysis:
               index (int): 0 or 1, representing which region of interest it is.
         Returns:
                 dict : Contains the following keys -
-                       a) zscores - Lists of zscore corresponding to the Allen Brain coordinates (in MNI52 space) which are spatially represented in region of interest given by roi parameter.
-                       b) coords - Lists of Allen Brain coordinates (in MNI52 space) which are spatially represented in region of interest given by roi parameter.
+                       a) zscores - Lists of zscore corresponding to the Allen Brain coordinates (in MNI152 space) which are spatially represented in region of interest given by roi parameter.
+                       b) coords - Lists of Allen Brain coordinates (in MNI152 space) which are spatially represented in region of interest given by roi parameter.
                        c) specimen - same as specimen['name'].
                        d) name - 'img1' representing first region of interest, 'img2' representing second region of interest.
         """
         revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
+        revised_samples_zscores_and_specimen_dict['realname'] = roi['name']
         revised_samples_zscores_and_specimen_dict['name'] = 'img{}'.format(str(index+1))
-        img_arr = roi.get_data()
-        invroiMni = np.linalg.inv(roi.affine)
+        img_arr = roi['data'].get_data()
+        invroiMni = np.linalg.inv(roi['data'].affine)
         T = np.dot(invroiMni, specimen['alignment3d'])
-        coords = transform_samples_MRI_to_MNI52(index_to_samples_zscores_and_specimen_dict['samples'], T)
+        coords = transform_samples_MRI_to_MNI152(index_to_samples_zscores_and_specimen_dict['samples'], T)
         coords = (np.rint(coords)).astype(int)
         #How to use numpy.where
         coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or img_arr[coord[0],coord[1],coord[2]] <= self.filter_threshold or img_arr[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
@@ -422,10 +425,22 @@ class Analysis:
         self.genesymbol_and_mean_zscores['uniqueId'] = unique_gene_symbols
         self.genesymbol_and_mean_zscores['combined_zscores'] = winsorzed_mean_zscores
 
+    def accumulate_roicoords_and_name(self):
+        areainfo = {}
+        for roi_coord_zscore in self.filtered_coords_and_zscores:
+            key = roi_coord_zscore['realname']
+            if key not in areainfo:
+                areainfo[key] = []
+            for c in roi_coord_zscore['coords']:
+                areainfo[key].append(c.tolist())
+        print(areainfo)
+        self.result_for_web_version.append(areainfo)
+
     def initialize_anova_factors(self):
         """
         Prepare self.anova_factors. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_factors
         """
+        self.accumulate_roicoords_and_name()
         combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
         self.read_specimen_factors(self.cache_dir)
@@ -447,6 +462,7 @@ class Analysis:
         """
         Perform one iteration of ANOVA. Use output of this to populate F_vec_ref_anovan which becomes initial estimate of n_rep passes of FWE.
         """
+
         self.F_vec_ref_anovan = np.zeros(self.n_genes)
         for i in range(self.n_genes):
             self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,i]
@@ -512,6 +528,7 @@ class Analysis:
         #self.FWE_corrected_p =  [np.count_nonzero(max_F_mat_perm_anovan >= f)/self.n_rep for f in self.F_vec_ref_anovan]
 
         self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
+        self.result_for_web_version.append(self.gene_id_and_pvalues)
         if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
 
@@ -520,6 +537,7 @@ class Analysis:
         Perform one way anova on zscores as the dependent variable and specimen factors such as age, race, name and area
         as independent variables
         """
+
         self.initialize_anova_factors()
         self.first_iteration()
         self.fwe_correction()

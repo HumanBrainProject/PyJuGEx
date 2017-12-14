@@ -5,6 +5,7 @@ import nibabel as nib
 import requests
 import tempfile
 import os
+import logging
 
 dictionaryimages = {}
 
@@ -25,7 +26,8 @@ class jubrain:
         try:
             r = requests.get(url, verify=False)
         except requests.HTTPError(e):
-            print(e)
+            logging.basicConfig(level=logging.INFO)
+            logging.getLogger(__name__).error(e)
             raise
         if last not in ('nii', 'gz'):
             raise OSError('Not an acceptable file format for rois')
