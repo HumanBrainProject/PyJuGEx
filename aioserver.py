@@ -5,7 +5,7 @@ import nibabel as nib
 import hbp_human_atlas as atlas
 import analysispyjugex
 
-with open("genesymbols.txt", "r") as f:
+with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
 #dictAutocomplete = ["ADRA2A", "AVPR1B", "CHRM2", "CNR1", "CREB1", "CRH", "CRHR1", "CRHR2", "GAD2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR3A", "HTR5A", "MAOA", "PDE1A", "SLC6A2", "SLC6A4", "SST", "TAC1", "TPH1", "GPR50", "CUX2", "TPH2"]
 
