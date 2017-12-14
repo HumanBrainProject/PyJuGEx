@@ -16,12 +16,9 @@ MNI152 = True
 
 class jubrain:        
     @classmethod
-    def probability_map(cls, regionname, coordspace):
+    def probability_map(cls, url, regionname, coordspace):
         if coordspace is False:
             raise ValueError('Only MNI152 template space is supported')
-        if regionname not in dictionaryimages:
-            raise ValueError(regionname+' is not present in the database')
-        url = dictionaryimages[regionname]
         last = url.split('.')[-1]
         try:
             r = requests.get(url, verify=False)
