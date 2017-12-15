@@ -436,6 +436,9 @@ class Analysis:
         self.genesymbol_and_mean_zscores['combined_zscores'] = winsorzed_mean_zscores
 
     def accumulate_roicoords_and_name(self):
+        """
+        Populate roi names, coordinates and sample well and polygon id for display
+        """
         areainfo = {}
         for roi_coord_zscore in self.filtered_coords_and_zscores:
             key = roi_coord_zscore['realname']
