@@ -42,10 +42,13 @@ def transform_samples_MRI_to_MNI152(samples, transformation_mat):
     """
     Convert the MRI coordinates of samples to MNI152 space
     Args:
-          samples (dict): Contains mri coordinates for each sample used in Allen Brain.
+          samples (dict): Contains mri coordinates, well and polygon id for each sample used in Allen Brain.
           transformation_mat (numpy.ndarray): A 4x4 numpy array to convert the above mentioned MRI coordinates to MNI152 space.
     Returns:
-          numpy.ndarray: A two dimensional numpy array where each row represents a three dimensional coordinate in MNI152 space.
+          dict: A dictionary containing three keys -
+            mnicoords - two dimensional numpy array where each row represents a three dimensional coordinate in MNI152 space, for all the samples.
+            well - list of well id for the sample the respective coordinate belongs to
+            polygon -  list of polygon id for the sample the respective coordinate belongs to
     """
     np_T = np.array(transformation_mat[0:3, 0:4])
     mri = np.vstack(s['sample']['mri'] for s in samples)
@@ -272,10 +275,12 @@ class Analysis:
                 dict : Contains the following keys -
                        a) zscores - Lists of zscore corresponding to the Allen Brain coordinates (in MNI152 space) which are spatially represented in region of interest given by roi parameter.
                        b) coords - Lists of Allen Brain coordinates (in MNI152 space) which are spatially represented in region of interest given by roi parameter.
-                       c) specimen - same as specimen['name'].
-                       d) name - 'img1' representing first region of interest, 'img2' representing second region of interest.
+                       c) coord_well - Lists of well id for all the samples which are spatially represented in region of interest given by roi parameter.
+                       d) coord_polygon - Lists of polygon id for all the samples which are spatially represented in region of interest given by roi parameter.
+                       e) specimen - same as specimen['name'].
+                       f) name - 'img1' representing first region of interest, 'img2' representing second region of interest.
         """
-        revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'specimen', 'name'])
+        revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'coord_well', 'coord_polygon', 'specimen', 'name'])
         revised_samples_zscores_and_specimen_dict['realname'] = roi['name']
         revised_samples_zscores_and_specimen_dict['name'] = 'img{}'.format(str(index+1))
         img_arr = roi['data'].get_data()
