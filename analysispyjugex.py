@@ -54,7 +54,10 @@ def transform_samples_MRI_to_MNI152(samples, transformation_mat):
     mri = np.transpose(mri)
     coords = np.matmul(np_T, mri)
     coords = coords.transpose()
-    return coords
+    well = [s['sample']['well'] for s in samples]
+    polygon = [s['sample']['polygon'] for s in samples]
+    return {'mnicoords' : coords, 'well' : well, 'polygon' : polygon}
+    #return coords
 
 def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
     """
@@ -278,11 +281,18 @@ class Analysis:
         img_arr = roi['data'].get_data()
         invroiMni = np.linalg.inv(roi['data'].affine)
         T = np.dot(invroiMni, specimen['alignment3d'])
+        '''
         coords = transform_samples_MRI_to_MNI152(index_to_samples_zscores_and_specimen_dict['samples'], T)
         coords = (np.rint(coords)).astype(int)
-        #How to use numpy.where
         coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or img_arr[coord[0],coord[1],coord[2]] <= self.filter_threshold or img_arr[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
         revised_samples_zscores_and_specimen_dict['coords'] = [coord for coord in coords if (coord > 0).sum() == 3]
+        '''
+        coords_dict = transform_samples_MRI_to_MNI152(index_to_samples_zscores_and_specimen_dict['samples'], T)
+        coords = (np.rint(coords_dict['mnicoords'])).astype(int)
+        coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or img_arr[coord[0],coord[1],coord[2]] <= self.filter_threshold or img_arr[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
+        revised_samples_zscores_and_specimen_dict['coords'] = [coord for coord in coords if (coord > 0).sum() == 3]
+        revised_samples_zscores_and_specimen_dict['coord_well'] = [well for (coord, well) in zip(coords, coords_dict['well']) if (coord > 0).sum() == 3]
+        revised_samples_zscores_and_specimen_dict['coord_polygon'] = [polygon for (coord, polygon) in zip(coords, coords_dict['polygon']) if (coord > 0).sum() == 3]
         revised_samples_zscores_and_specimen_dict['zscores'] = [zscore for (coord, zscore) in zip(coords, index_to_samples_zscores_and_specimen_dict['zscores']) if (coord > 0).sum() == 3]
         revised_samples_zscores_and_specimen_dict['specimen'] = specimen['name']
         return revised_samples_zscores_and_specimen_dict
@@ -431,8 +441,8 @@ class Analysis:
             key = roi_coord_zscore['realname']
             if key not in areainfo:
                 areainfo[key] = []
-            for c in roi_coord_zscore['coords']:
-                areainfo[key].append(c.tolist())
+            for c, w, p in zip(roi_coord_zscore['coords'], roi_coord_zscore['coord_well'], roi_coord_zscore['coord_polygon']):
+                areainfo[key].append({'xyz' : c.tolist(), 'well' : w, 'polygon' : p})
         print(areainfo)
         self.result_for_web_version.append(areainfo)
 
