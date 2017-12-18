@@ -185,9 +185,16 @@ class Analysis:
                 logging.getLogger(__name__).error(e)
                 raise
             data = xmltodict.parse(response.text)
+            try:
+                response = requests.get(url)
+            except requests.exceptions.RequestException as e:
+                logging.getLogger(__name__).error(e)
+                raise
+            if int(data['Response']['@num_rows']) <= 0:
+                raise ValueError('Please check the spelling of {}. No such gene exists in Allen Brain API.'.format(gene))
+                #return json.dumps('Please check the spelling of {}. No such gene exists in Allen Brain API.'.format(gene))
             self.probe_ids = self.probe_ids + [donor['id'] for donor in data['Response']['probes']['probe'] if gene in self.gene_list_to_download]
             self.gene_symbols = self.gene_symbols + [gene for donor in data['Response']['probes']['probe']]
-
         if self.verbose:
             logging.getLogger(__name__).info('probe_ids: {}'.format(self.probe_ids))
             logging.getLogger(__name__).info('gene_symbols: {}'.format(self.gene_symbols))

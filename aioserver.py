@@ -17,7 +17,7 @@ def pyjugex_analysis(jsonobj):
     roi1['name'] = jsonobj['area1']['name']
     roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['url'], jsonobj['area2']['name'], atlas.MNI152)
     roi2['name'] = jsonobj['area2']['name']
-    jugex = analysispyjugex.Analysis(gene_cache_dir=".pyjugex", verbose=False)
+    jugex = analysispyjugex.Analysis(gene_cache_dir=".pyjugex", verbose=True)
     result = jugex.DifferentialAnalysis(jsonobj['genelist'], roi1, roi2)
     return result
 
@@ -26,8 +26,12 @@ async def handle_post(request):
         jsonobj = await request.json()
     else:
         return web.Response(status=400)
-    data = pyjugex_analysis(jsonobj)
-    return web.Response(status=200,content_type="application/json",body=data)
+    try:
+        data = pyjugex_analysis(jsonobj)
+        return web.Response(status=200,content_type="application/json",body=data)
+    except Exception as e:
+        print(e)
+        return web.Response(status=400,body=str(e))
 
 async def return_auto_complete(request):
 #    return web.Response(status=200,content_type="application/json",body=json.dumps(dictAutocomplete))
