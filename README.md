@@ -12,7 +12,7 @@ Find a set of differentially expressed genes between two user defined volumes of
 * nibabel
 * xmltodict
 
-### Installing
+### Installation
 ```
 git clone -b webjugex https://github.com/haimasree/Jugex.git
 git clone https://github.com/haimasree/ws_filewatcher.git
