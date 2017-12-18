@@ -3,6 +3,8 @@ Find a set of differentially expressed genes between two user defined volumes of
 
 ## Dependencies
 * node 6+
+* aiohttp
+* aiohttp_cors
 * numpy
 * scipy
 * statsmodels
