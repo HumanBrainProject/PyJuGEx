@@ -146,7 +146,7 @@ class Analysis:
         """
         if not gene_list:
             raise ValueError('Atleast one gene is needed for the analysis')
-        if not (isinstance(roi1['data'], nib.nifti1.Nifti1Image) or isinstance(roi2['data'], nib.nifti1.Nifti1Image)):
+        if not (isinstance(roi1['data'], nib.nifti1.Nifti1Image) and isinstance(roi2['data'], nib.nifti1.Nifti1Image)):
             raise ValueError('Atleast two valid regions of interest are needed')
         self.set_candidate_genes(gene_list)
         self.set_roi_MNI152(roi1, 0)
@@ -192,7 +192,6 @@ class Analysis:
                 raise
             if int(data['Response']['@num_rows']) <= 0:
                 raise ValueError('Please check the spelling of {}. No such gene exists in Allen Brain API.'.format(gene))
-                #return json.dumps('Please check the spelling of {}. No such gene exists in Allen Brain API.'.format(gene))
             self.probe_ids = self.probe_ids + [donor['id'] for donor in data['Response']['probes']['probe'] if gene in self.gene_list_to_download]
             self.gene_symbols = self.gene_symbols + [gene for donor in data['Response']['probes']['probe']]
         if self.verbose:
