@@ -76,7 +76,7 @@ def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
 
 class Analysis:
 
-    def __init__(self, gene_cache_dir, verbose=False):
+    def __init__(self, gene_cache_dir, filter_threshold=0.2, verbose=False):
         """
         Initialize the Analysis class with various internal variables -
         Args:
@@ -111,7 +111,7 @@ class Analysis:
         self.samples_zscores_and_specimen_dict['samples_and_zscores'] = []
         self.rois = []
         self.filtered_coords_and_zscores = []
-        self.filter_threshold = 0.2
+        self.filter_threshold = float(filter_threshold)
         self.n_rep = 1000
         self.cache_dir = gene_cache_dir
         self.verbose = verbose
