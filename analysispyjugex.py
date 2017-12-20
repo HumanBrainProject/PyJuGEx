@@ -116,7 +116,7 @@ class Analysis:
         self.cache_dir = gene_cache_dir
         self.verbose = verbose
         self.anova_factors = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
-        self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])        
+        self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])
         self.result_for_web_version = []
         logging.basicConfig(level=logging.INFO)
         '''
@@ -455,8 +455,14 @@ class Analysis:
             key = roi_coord_zscore['realname']
             if key not in areainfo:
                 areainfo[key] = []
+            i = 0
+            '''
             for c, w, p in zip(roi_coord_zscore['coords'], roi_coord_zscore['coord_well'], roi_coord_zscore['coord_polygon']):
                 areainfo[key].append({'xyz' : c.tolist(), 'well' : w, 'polygon' : p})
+            '''
+            for c in roi_coord_zscore['coords']:
+                areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
+                i = i+1
         print(areainfo)
         self.result_for_web_version.append(areainfo)
 
@@ -464,7 +470,6 @@ class Analysis:
         """
         Prepare self.anova_factors. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_factors
         """
-        self.accumulate_roicoords_and_name()
         combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
         self.read_specimen_factors(self.cache_dir)
@@ -481,6 +486,8 @@ class Analysis:
         st = set(self.specimen_factors['name'])
         self.anova_factors['Age'] = [self.specimen_factors['age'][self.specimen_factors['name'].index(specimen_name)] for ind, specimen_name in enumerate(self.anova_factors['Specimen'])]
         self.anova_factors['Race'] = [self.specimen_factors['race'][self.specimen_factors['name'].index(specimen_name)] for ind, specimen_name in enumerate(self.anova_factors['Specimen'])]
+
+        self.accumulate_roicoords_and_name()
 
     def first_iteration(self):
         """
