@@ -456,15 +456,10 @@ class Analysis:
             if key not in areainfo:
                 areainfo[key] = []
             i = 0
-            '''
-            for c, w, p in zip(roi_coord_zscore['coords'], roi_coord_zscore['coord_well'], roi_coord_zscore['coord_polygon']):
-                areainfo[key].append({'xyz' : c.tolist(), 'well' : w, 'polygon' : p})
-            '''
             for c in roi_coord_zscore['coords']:
                 areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 i = i+1
-        print(areainfo)
-        self.result_for_web_version.append(areainfo)
+       self.result_for_web_version.append(areainfo)
 
     def initialize_anova_factors(self):
         """
