@@ -496,6 +496,7 @@ class Analysis:
                     areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 #areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 i = i+1
+
         self.result_for_web_version.append(areainfo)
 
     def initialize_anova_factors(self):
@@ -609,6 +610,7 @@ class Analysis:
             self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
         #self.gene_id_and_pvalues = dict(zip(self.genesymbol_and_mean_zscores['uniqueId'], self.FWE_corrected_p))
         self.result_for_web_version.append(self.gene_id_and_pvalues)
+        self.result_for_web_version.append(self.probe_keys)
         if self.verbose:
             logging.getLogger(__name__).info('gene_id_and_pvalues: {}'.format(self.gene_id_and_pvalues))
 
