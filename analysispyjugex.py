@@ -99,6 +99,7 @@ class Analysis:
             genesymbol_and_mean_zscores (dict) : dictionary with two keys - uniqueid, combinedzscores where each gene and the winsorzed mean zscores over all probes associated with that gene is stored.
             gene_id_and_pvalues (dict) : dict for storing gene ids and associated p values.
         """
+        self.probe_keys = []
         self.probe_ids = []
         self.gene_list = []
         self.gene_list_to_download = []
@@ -175,8 +176,7 @@ class Analysis:
         """
         base_retrieve_probe_ids = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
         end_retrieve_probe_ids = "],rma::options[only$eq'probes.id']"
-        if self.single_probe_mode:
-            self.probe_keys = []
+
         for gene in self.gene_list:
             url = '{}{}{}'.format(base_retrieve_probe_ids, gene, end_retrieve_probe_ids)
             if self.verbose:
@@ -187,15 +187,10 @@ class Analysis:
                 logging.getLogger(__name__).error(e)
                 raise
             data = xmltodict.parse(response.text)
-            if self.single_probe_mode:
-                self.probe_keys = self.probe_keys + [donor['id'] for donor in data['Response']['probes']['probe']]
-            try:
-                response = requests.get(url)
-            except requests.exceptions.RequestException as e:
-                logging.getLogger(__name__).error(e)
-                raise
+
             if int(data['Response']['@num_rows']) <= 0:
                 raise ValueError('Please check the spelling of {}. No such gene exists in Allen Brain API.'.format(gene))
+            self.probe_keys = self.probe_keys + [donor['id'] for donor in data['Response']['probes']['probe']]
             self.probe_ids = self.probe_ids + [donor['id'] for donor in data['Response']['probes']['probe'] if gene in self.gene_list_to_download]
             self.gene_symbols = self.gene_symbols + [gene for donor in data['Response']['probes']['probe']]
         if self.verbose:
@@ -204,26 +199,6 @@ class Analysis:
 
 
     def read_cached_zscores_samples_and_specimen_data(self):
-        """
-        Read cached Allen Brain Api data from disk location and update self.samples_zscores_and_specimen_dict['specimen_info'] and self.samples_zscores_and_specimen_dict['samples_and_zscores']
-        """
-        for donor in self.donor_ids:
-            donor_path = os.path.join(self.cache_dir, donor)
-            specimen = dict.fromkeys(['name', 'alignment3d'])
-            with open(os.path.join(donor_path, 'specimenMat.txt'), 'r') as f:
-                specimen['alignment3d'] = np.loadtxt(f)
-            with open(os.path.join(donor_path, 'specimenName.txt'), 'r') as f:
-                specimen['name'] = f.read()
-            self.samples_zscores_and_specimen_dict['specimen_info'] = self.samples_zscores_and_specimen_dict['specimen_info'] + [specimen]
-            with open(os.path.join(donor_path, 'samples.txt'), 'r') as f:
-                samples = json.load(f)
-            with open(os.path.join(donor_path, 'zscores.txt'), 'r') as f:
-                zscores = np.loadtxt(f)
-            self.samples_zscores_and_specimen_dict['samples_and_zscores'] = self.samples_zscores_and_specimen_dict['samples_and_zscores']  + [{'samples' : samples, 'zscores' : zscores}]
-            if self.verbose:
-                logging.getLogger(__name__).info('inside readcachedata {}, {}'.format(len(self.samples_zscores_and_specimen_dict['samples_and_zscores'][-1]['samples']), self.samples_zscores_and_specimen_dict['samples_and_zscores'][-1]['zscores'].shape))
-
-    def read_cached_zscores_samples_and_specimen_data_single_probe_mode(self):
         """
         Read cached Allen Brain Api data from disk location and update self.samples_zscores_and_specimen_dict['specimen_info'] and self.samples_zscores_and_specimen_dict['samples_and_zscores']
         """
@@ -447,11 +422,7 @@ class Analysis:
             if self.gene_list_to_download:
                 for donor in self.donor_ids:
                     self.__download_and_save_zscores_and_samples_partial(donor)            
-            if self.single_probe_mode:
-                self.read_cached_zscores_samples_and_specimen_data_single_probe_mode()
-            else:
-                self.read_cached_zscores_samples_and_specimen_data()
-
+            self.read_cached_zscores_samples_and_specimen_data()
 
 
     def get_mean_zscores(self, combined_zscores):
