@@ -1,0 +1,8 @@
+numpy
+scipy
+statsmodels
+requests
+nibabel
+xmltodict
+aiohttp
+aiohttp_cors
