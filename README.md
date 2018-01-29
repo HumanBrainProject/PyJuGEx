@@ -37,6 +37,6 @@ Go to the url and run your plugin
 * Big Data Analytics Group, INM-1, Research Center Juelich
 ## Acknowledgments
 
-* Dr. Sebastian Bludau
+* Dr. Sebastian Bludau, Dr. Thomas Mühleisen
 * Dr. Timo Dickscheid and other members of BDA-INM1 
 
