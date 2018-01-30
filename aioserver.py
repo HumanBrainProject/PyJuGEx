@@ -13,13 +13,13 @@ def pyjugex_analysis(jsonobj):
     print(jsonobj)
     roi1 = {}
     roi2 = {}
-    roi1['data'] = atlas.jubrain.probability_map(jsonobj['area1']['url'], jsonobj['area1']['name'], atlas.MNI152)
+    roi1['data'] = atlas.jubrain.probability_map(jsonobj['area1']['PMapURL'], jsonobj['area1']['name'], atlas.MNI152)
     roi1['name'] = jsonobj['area1']['name']
-    roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['url'], jsonobj['area2']['name'], atlas.MNI152)
+    roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], atlas.MNI152)
     roi2['name'] = jsonobj['area2']['name']
     jugex = analysispyjugex.Analysis(gene_cache_dir=".pyjugex", filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
     print(jsonobj['mode'])
-    result = jugex.DifferentialAnalysis(jsonobj['genelist'], roi1, roi2)
+    result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
     print(result)
     return result
 
