@@ -1,10 +1,10 @@
-from distutils.core import setup
+from setuptools import setup
 setup(name='pyjugex',
       version='0.1',
-      description='Perform differential gene expression on two chosen brain regions',
-      url='https://github.com/haimasree/Jugex',
+      packages=['webjugex'],
+      license='BSD',
+      description='Perform web based differential gene expression on two chosen brain regions',
+      url='https://github.com/haimasree/webjugex',
       author='Big Data Analytics Group, INM-1, Research Center Juelich',
       author_email='h.bhattacharya@fz-juelich.de',
-      py_modules=['analysispyjugex', 'hbp_human_atlas'],
-      install_requires=['numpy', 'scipy', 'statsmodels', 'requests', 'nibabel', 'xmltodict', 'aiohttp', 'aiohttp_cors'], 
       )
