@@ -10,7 +10,6 @@ with open("files/genesymbols.txt", "r") as f:
 #dictAutocomplete = ["ADRA2A", "AVPR1B", "CHRM2", "CNR1", "CREB1", "CRH", "CRHR1", "CRHR2", "GAD2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR3A", "HTR5A", "MAOA", "PDE1A", "SLC6A2", "SLC6A4", "SST", "TAC1", "TPH1", "GPR50", "CUX2", "TPH2"]
 
 def pyjugex_analysis(jsonobj):
-    print(jsonobj)
     roi1 = {}
     roi2 = {}
     roi1['data'] = atlas.jubrain.probability_map(jsonobj['area1']['PMapURL'], jsonobj['area1']['name'], atlas.MNI152)
@@ -18,9 +17,7 @@ def pyjugex_analysis(jsonobj):
     roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], atlas.MNI152)
     roi2['name'] = jsonobj['area2']['name']
     jugex = webjugex.Analysis(gene_cache_dir=".pyjugex", filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
-    print(jsonobj['mode'])
     result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
-    print(result)
     return result
 
 async def handle_post(request):
@@ -36,7 +33,6 @@ async def handle_post(request):
         return web.Response(status=400,body=str(e))
 
 async def return_auto_complete(request):
-#    return web.Response(status=200,content_type="application/json",body=json.dumps(dictAutocomplete))
      return web.Response(status=200,content_type="application/json",body=dictAutocompleteString)
 
 
