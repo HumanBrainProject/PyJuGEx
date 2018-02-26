@@ -1,5 +1,5 @@
 from setuptools import setup
-setup(name='pyjugex',
+setup(name='webjugex',
       version='0.1',
       packages=['webjugex'],
       license='BSD',
