@@ -17,7 +17,7 @@ def pyjugex_analysis(jsonobj):
     roi1['name'] = jsonobj['area1']['name']
     roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], atlas.MNI152)
     roi2['name'] = jsonobj['area2']['name']
-    jugex = analysispyjugex.Analysis(gene_cache_dir=".pyjugex", filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
+    jugex = webjugex.Analysis(gene_cache_dir=".pyjugex", filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
     print(jsonobj['mode'])
     result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
     print(result)
