@@ -3,7 +3,7 @@ import aiohttp_cors
 import json
 import nibabel as nib
 import hbp_human_atlas as atlas
-import analysispyjugex
+import webjugex
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
