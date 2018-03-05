@@ -22,7 +22,7 @@ class jubrain:
         last = url.split('.')[-1]
         try:
             r = requests.get(url, verify=False)
-        except requests.HTTPError(e):
+        except requests.HTTPError as e:
             logging.basicConfig(level=logging.INFO)
             logging.getLogger(__name__).error(e)
             raise
