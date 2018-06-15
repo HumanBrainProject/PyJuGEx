@@ -464,9 +464,9 @@ class Analysis:
             i = 0
             for c in roi_coord_zscore['coords']:
                 if self.single_probe_mode:
-                    areainfo[key].append({'xyz' : np.transpose(np.matmul(self.affine,np.transpose(np.append(c,1))))[0:3], 'winsorzed_mean' : self.combined_zscores[i].tolist()})
+                    areainfo[key].append({'xyz' : np.transpose(np.matmul(self.affine,np.transpose(np.append(c,1))))[0:3].tolist(), 'winsorzed_mean' : self.combined_zscores[i].tolist()})
                 else:
-                    areainfo[key].append({'xyz' : np.transpose(np.matmul(self.affine,np.transpose(np.append(c,1))))[0:3], 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
+                    areainfo[key].append({'xyz' : np.transpose(np.matmul(self.affine,np.transpose(np.append(c,1))))[0:3].tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 #areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 i = i+1
 
