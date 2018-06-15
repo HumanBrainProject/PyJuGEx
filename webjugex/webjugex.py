@@ -111,6 +111,7 @@ class Analysis:
         self.samples_zscores_and_specimen_dict['specimen_info'] = []
         self.samples_zscores_and_specimen_dict['samples_and_zscores'] = []
         self.rois = []
+        self.affine = []
         self.filtered_coords_and_zscores = []
         self.filter_threshold = float(filter_threshold)
         self.n_rep = 1000
@@ -153,6 +154,7 @@ class Analysis:
         self.set_candidate_genes(gene_list)
         self.set_roi_MNI152(roi1, 0)
         self.set_roi_MNI152(roi2, 1)
+        self.affine = roi1['data'].affine
         logging.getLogger(__name__).info('Starting the analysis. This may take some time.....')
         self.anova()
         #return self.gene_id_and_pvalues
@@ -462,9 +464,9 @@ class Analysis:
             i = 0
             for c in roi_coord_zscore['coords']:
                 if self.single_probe_mode:
-                    areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.combined_zscores[i].tolist()})
+                    areainfo[key].append({'xyz' : np.transpose(np.matmul(self.affine,np.transpose(np.append(c,1))))[0:3], 'winsorzed_mean' : self.combined_zscores[i].tolist()})
                 else:
-                    areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
+                    areainfo[key].append({'xyz' : np.transpose(np.matmul(self.affine,np.transpose(np.append(c,1))))[0:3], 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 #areainfo[key].append({'xyz' : c.tolist(), 'winsorzed_mean' : self.genesymbol_and_mean_zscores['combined_zscores'][i].tolist()})
                 i = i+1
 
