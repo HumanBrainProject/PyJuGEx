@@ -41,6 +41,7 @@ def main():
     cors = aiohttp_cors.setup(app)
     cors.add(app.router.add_post("/jugex",handle_post), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_get("/",return_auto_complete), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
+    cors.add(app.router.add_static('/public/',path=str('./public/')))
     web.run_app(app,host="0.0.0.0",port=8003)
 
 if __name__=='__main__':
