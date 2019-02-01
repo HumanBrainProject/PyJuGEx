@@ -8,4 +8,6 @@ RUN pip install .
 
 WORKDIR /webjugex/webjugex
 
+EXPOSE 8003
+
 ENTRYPOINT [ "python", "aioserver.py" ]
