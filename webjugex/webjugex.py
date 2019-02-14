@@ -123,6 +123,12 @@ class Analysis:
         self.result_for_web_version = []
         logging.basicConfig(level=logging.INFO)
         '''
+        Cache dir needs to be created on init.
+        '''
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+
+        '''
         Removes any folder that has not been written to properly, most likely due to force quit
         '''
         probe_path = os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0]))
@@ -256,8 +262,6 @@ class Analysis:
             logging.getLogger(__name__).info(e)
             raise
         data = text['msg']
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir)
         donor_path = os.path.join(self.cache_dir, donor_id)
         if not os.path.exists(donor_path):
             os.makedirs(donor_path)
