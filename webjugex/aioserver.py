@@ -11,7 +11,7 @@ with open("files/genesymbols.txt", "r") as f:
 #dictAutocomplete = ["ADRA2A", "AVPR1B", "CHRM2", "CNR1", "CREB1", "CRH", "CRHR1", "CRHR2", "GAD2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR3A", "HTR5A", "MAOA", "PDE1A", "SLC6A2", "SLC6A4", "SST", "TAC1", "TPH1", "GPR50", "CUX2", "TPH2"]
 
 # get cache dir from environment variable
-if os.getenv['GENE_CACHE_DIR'] is not None:
+if os.getenv(['GENE_CACHE_DIR']) is not None:
     gene_cache_dir = os.getenv['GENE_CACHE_DIR']
 else:
     gene_cache_dir = '.pyjugex'
