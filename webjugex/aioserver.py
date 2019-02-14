@@ -21,7 +21,7 @@ def pyjugex_analysis(jsonobj):
     return result
 
 async def handle_post(request):
-    if request.has_body:
+    if request.can_read_body:
         jsonobj = await request.json()
     else:
         return web.Response(status=400)
