@@ -7,7 +7,6 @@ RUN pip install -r requirements.txt
 RUN pip install .
 
 WORKDIR /webjugex/webjugex
-RUN mkdir .pyjugex
 
 EXPOSE 8003
 
