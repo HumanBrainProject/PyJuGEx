@@ -1,13 +1,13 @@
 FROM python:3
 
+ARG GENE_CACHE_DIR
+ENV GENE_CACHE_DIR=$GENE_CACHE_DIR
+
 COPY . /webjugex
 WORKDIR /webjugex
 
 RUN pip install -r requirements.txt
 RUN pip install .
-
-RUN groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
-USER appuser
 
 WORKDIR /webjugex/webjugex
 

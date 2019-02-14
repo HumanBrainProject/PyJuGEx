@@ -4,10 +4,17 @@ import json
 import nibabel as nib
 import hbp_human_atlas as atlas
 import webjugex
+import os
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
 #dictAutocomplete = ["ADRA2A", "AVPR1B", "CHRM2", "CNR1", "CREB1", "CRH", "CRHR1", "CRHR2", "GAD2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR3A", "HTR5A", "MAOA", "PDE1A", "SLC6A2", "SLC6A4", "SST", "TAC1", "TPH1", "GPR50", "CUX2", "TPH2"]
+
+# get cache dir from environment variable
+if os.getenv['GENE_CACHE_DIR'] is not None:
+    gene_cache_dir = os.getenv['GENE_CACHE_DIR']
+else:
+    gene_cache_dir = '.pyjugex'
 
 def pyjugex_analysis(jsonobj):
     roi1 = {}
@@ -16,7 +23,7 @@ def pyjugex_analysis(jsonobj):
     roi1['name'] = jsonobj['area1']['name']
     roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], atlas.MNI152)
     roi2['name'] = jsonobj['area2']['name']
-    jugex = webjugex.Analysis(gene_cache_dir=".pyjugex", filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
+    jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
     result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
     return result
 
