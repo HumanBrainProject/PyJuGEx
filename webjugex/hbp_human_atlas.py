@@ -34,3 +34,24 @@ class jubrain:
         os.close(fp)
         return img_array
 
+    @classmethod
+    def probability_map_v2(cls, url, regionname, body, coordspace):
+
+        # v2 uses post instead of get, and expects optionally a body to be passed as body 
+        if coordspace is False:
+            raise ValueError('Only MNI152 template space is supported')
+        try:
+            r = requests.post(url, json=body)
+        except requests.HTTPError as e:
+            logging.basicConfig(level=logging.INFO)
+            logging.getLogger(__name__).error(e)
+            raise
+        if r.status_code >= 400:
+            raise ValueError(r.status_code)
+        # no need to specify correct extension
+        fp, fp_name = tempfile.mkstemp(suffix=".nii")
+        os.write(fp, r.content)
+        img_array = nib.load(fp_name)
+        os.close(fp)
+        return img_array
+
