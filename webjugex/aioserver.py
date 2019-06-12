@@ -5,6 +5,7 @@ import nibabel as nib
 import hbp_human_atlas as atlas
 import webjugex
 import os
+import requests
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
@@ -63,12 +64,20 @@ async def handle_post2(request):
         jsonobj = await request.json()
     else:
         return web.Response(status=400)
-    try:
+    if "cbUrl" in jsonobj:
+        web.Response(status=200)
         data = pyjugex_analysis2(jsonobj)
-        return web.Response(status=200,content_type="application/json",body=data)
-    except Exception as e:
-        print(e)
-        return web.Response(status=400,body=str(e))
+        try:
+            requests.post(jsonobj["cbUrl"], json=data)
+        except Exception as e:
+            print("result callback error", e)
+    else:
+        try:
+            data = pyjugex_analysis2(jsonobj)
+            return web.Response(status=200,content_type="application/json",body=data)
+        except Exception as e:
+            print(e)
+            return web.Response(status=400,body=str(e))
 
 def main():
     app = web.Application()
