@@ -34,7 +34,12 @@ def pyjugex_analysis2(jsonobj):
     roi1['name'] = jsonobj['area1']['name']
     roi2['data'] = atlas.jubrain.probability_map_v2(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], jsonobj['area2']['body'], atlas.MNI152)
     roi2['name'] = jsonobj['area2']['name']
-    jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
+
+    # TODO implement fallback defaults
+    single_probe_mode = jsonobj['mode']
+    filter_threshold = jsonobj['threshold']
+    n_rep = jsonobj['nPermutations']
+    jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
     result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
     return result
 
