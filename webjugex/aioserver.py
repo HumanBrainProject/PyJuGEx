@@ -68,7 +68,7 @@ async def handle_post2(request):
         web.Response(status=200)
         data = pyjugex_analysis2(jsonobj)
         try:
-            requests.post(jsonobj["cbUrl"], json=data)
+            requests.post(jsonobj["cbUrl"], json=json.loads(data))
         except Exception as e:
             print("result callback error", e)
     else:
