@@ -7,6 +7,9 @@ import webjugex
 import os
 import requests
 
+from default import default_param
+
+
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
 #dictAutocomplete = ["ADRA2A", "AVPR1B", "CHRM2", "CNR1", "CREB1", "CRH", "CRHR1", "CRHR2", "GAD2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR3A", "HTR5A", "MAOA", "PDE1A", "SLC6A2", "SLC6A4", "SST", "TAC1", "TPH1", "GPR50", "CUX2", "TPH2"]
@@ -17,30 +20,28 @@ if os.getenv('GENE_CACHE_DIR') is not None:
 else:
     gene_cache_dir = '.pyjugex'
 
-def pyjugex_analysis(jsonobj):
+def get_roi_img_array(obj):
+    pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], body=obj['body'] if 'body' in obj else None)
+    return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(obj['PMapURL']))
+
+def run_pyjugex_analysis(jsonobj):
     roi1 = {}
     roi2 = {}
-    roi1['data'] = atlas.jubrain.probability_map(jsonobj['area1']['PMapURL'], jsonobj['area1']['name'], atlas.MNI152)
-    roi1['name'] = jsonobj['area1']['name']
-    roi2['data'] = atlas.jubrain.probability_map(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], atlas.MNI152)
-    roi2['name'] = jsonobj['area2']['name']
-    jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=jsonobj['threshold'], single_probe_mode = jsonobj['mode'], verbose=True)
-    result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
-    return result
 
-def pyjugex_analysis2(jsonobj):
-    roi1 = {}
-    roi2 = {}
-    roi1['data'] = atlas.jubrain.probability_map_v2(jsonobj['area1']['PMapURL'], jsonobj['area1']['name'], jsonobj['area1']['body'], atlas.MNI152)
+    roi1_obj = jsonobj['area1']
+    roi1['data'] = get_roi_img_array(roi1_obj)
     roi1['name'] = jsonobj['area1']['name']
-    roi2['data'] = atlas.jubrain.probability_map_v2(jsonobj['area2']['PMapURL'], jsonobj['area2']['name'], jsonobj['area2']['body'], atlas.MNI152)
+
+    roi2_obj = jsonobj['area2']
+    roi2['data'] = get_roi_img_array(roi2_obj)
     roi2['name'] = jsonobj['area2']['name']
 
-    # TODO implement fallback defaults
-    single_probe_mode = jsonobj['mode']
-    filter_threshold = jsonobj['threshold']
-    n_rep = jsonobj['nPermutations']
+    single_probe_mode = jsonobj['mode'] if jsonobj['mode'] is not None else default_param['mode']
+    filter_threshold = jsonobj['threshold'] if jsonobj['threshold'] is not None else default_param['threshold']
+    n_rep = jsonobj['nPermutations'] if jsonobj['nPermutations'] is not None else default_param['nPermutations']
+
     jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
+
     result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
     return result
 
@@ -50,7 +51,7 @@ async def handle_post(request):
     else:
         return web.Response(status=400)
     try:
-        data = pyjugex_analysis(jsonobj)
+        data = run_pyjugex_analysis(jsonobj)
         return web.Response(status=200,content_type="application/json",body=data)
     except Exception as e:
         print(e)
@@ -66,14 +67,17 @@ async def handle_post2(request):
         return web.Response(status=400)
     if "cbUrl" in jsonobj:
         web.Response(status=200)
-        data = pyjugex_analysis2(jsonobj)
         try:
+            data = run_pyjugex_analysis(jsonobj)
             requests.post(jsonobj["cbUrl"], json=json.loads(data))
         except Exception as e:
+            error = {}
+            error['error'] = e
+            requests.post(jsonobj["cbUrl"], json=json.loads(error)
             print("result callback error", e)
     else:
         try:
-            data = pyjugex_analysis2(jsonobj)
+            data = run_pyjugex_analysis(jsonobj)
             return web.Response(status=200,content_type="application/json",body=data)
         except Exception as e:
             print(e)
