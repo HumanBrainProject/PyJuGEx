@@ -21,3 +21,21 @@ def test_is_gzipped():
   assert util.is_gzipped(not_gzipped_1) == False
   assert util.is_gzipped(is_gzipped)
   assert util.is_gzipped(is_gzipped_1)
+
+def test_from_brainmap_retrieve_gene():
+  resp_dist = util.from_brainmap_retrieve_gene('MAOA')
+  total_rows = int(resp_dist['@total_rows'])
+  assert total_rows > 0
+
+def test_from_brainmap_retrieve_specimen():
+  resp_dict = util.from_brainmap_retrieve_specimen('H0351.1015')
+  assert resp_dict['success']
+
+def test_from_brainmap_retrieve_microarray_filterby_donorids_probeids():
+  gene = util.from_brainmap_retrieve_gene('MAOA')
+  probes = gene['Response']['probes']['probe']
+  probe_ids = list(map(lambda item: item['id'], probes))
+  donor_id = '15496'
+  resp = util.from_brainmap_retrieve_microarray_filterby_donorids_probeids(donor_id=donor_id, probe_ids=probe_ids)
+  assert resp['success']
+  
