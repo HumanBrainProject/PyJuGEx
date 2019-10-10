@@ -12,6 +12,8 @@ import shutil
 import multiprocessing
 import nibabel as nib
 import logging
+import util
+
 """
 Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package.
 Example:
@@ -129,14 +131,17 @@ class Analysis:
         probe_path = os.path.join(self.cache_dir, '{}/probes.txt'.format(self.donor_ids[0]))
         if os.path.exists(self.cache_dir) and not os.path.exists(probe_path):
             shutil.rmtree(self.cache_dir, ignore_errors = False)
+
+        # wait, if cache path doesn't exist, should we create the cache path?
+        # also, it is a good idea to download required gene probes etc in background
         '''
         Creates a gene cache to indicate which genes are present in the cache
         '''
-        if not os.path.exists(self.cache_dir):
-            logging.getLogger(__name__).info('{} does not exist. It will take some time '.format(self.cache_dir))
-        else:
+        if os.path.exists(self.cache_dir):
             self.create_gene_cache()
             logging.getLogger(__name__).info('{} genes exist in {}'.format(len(self.gene_cache), self.cache_dir))
+        else:
+            logging.getLogger(__name__).info('{} does not exist. It will take some time '.format(self.cache_dir))
 
     def DifferentialAnalysis(self, gene_list, roi1, roi2):
         """
@@ -161,6 +166,8 @@ class Analysis:
         #return self.gene_id_and_pvalues
         return json.dumps(self.result_for_web_version)
 
+    # only creates gene cache for the first donor_id
+    # and populates gene_cache with "MAOA": None
     def create_gene_cache(self):
         """
         Create a dictionary with an entry for each gene whose api information has been downloaded. We scan self.cache_dir/15496/probes.txt for the gene symbols.
@@ -177,19 +184,10 @@ class Analysis:
         Retrieve probe ids for the given gene lists, update self.probe_ids which will be used by download_and_save_zscores_samples() or download_and_save_zscores_samples_partial() to
         form the url and update self.gene_symbols to be used by get_mean_zscores()
         """
-        base_retrieve_probe_ids = "http://api.brain-map.org/api/v2/data/query.xml?criteria=model::Probe,rma::criteria,[probe_type$eq'DNA'],products[abbreviation$eq'HumanMA'],gene[acronym$eq"
-        end_retrieve_probe_ids = "],rma::options[only$eq'probes.id']"
 
         for gene in self.gene_list:
-            url = '{}{}{}'.format(base_retrieve_probe_ids, gene, end_retrieve_probe_ids)
-            if self.verbose:
-                logging.getLogger(__name__).info('url: {}'.format(url))
-            try:
-                response = requests.get(url)
-            except requests.exceptions.RequestException as e:
-                logging.getLogger(__name__).error(e)
-                raise
-            data = xmltodict.parse(response.text)
+            
+            data = util.from_brainmap_retrieve_gene(gene=gene, verbose=self.verbose)
 
             if int(data['Response']['@num_rows']) <= 0:
                 raise ValueError('Please check the spelling of {}. No such gene exists in Allen Brain API.'.format(gene))
@@ -236,26 +234,19 @@ class Analysis:
         if index < 0 or index > 1:
             raise ValueError('only 0 and 1 are valid choices')
         for i in range(len(self.samples_zscores_and_specimen_dict['specimen_info'])):
-            self.filtered_coords_and_zscores.append(self.filter_coordinates_and_zscores(roi, self.samples_zscores_and_specimen_dict['samples_and_zscores'][i], self.samples_zscores_and_specimen_dict['specimen_info'][i], index))
+            self.filtered_coords_and_zscores.append(
+                util.filter_coordinates_and_zscores(
+                    roi_name=roi['name'],
+                    roi_nii=roi['data'],
+                    index_to_samples_zscores_and_specimen_dict=self.samples_zscores_and_specimen_dict['samples_and_zscores'][i],
+                    specimen=self.samples_zscores_and_specimen_dict['specimen_info'][i],
+                    index=index,
+                    filter_threshold=self.filter_threshold
+                )
+            )
 
     def __download_and_save_zscores_and_samples(self, donor_id):
-        """
-        Query Allen Brain Api for given set of genes for the donor given by donor_id
-        Args:
-              donor_id (int): Id of a donor which is used to query Allen Brain API.
-        Returns:
-                dict: A dictionary representing the just downloaded samples, probes and zscores for the given donor_id and the probes given by self.probe_ids.
-        """
-        base_query_api = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
-        end_query_api = "][donors$eq{}]".format(donor_id)
-        url = '{}{}{}'.format(base_query_api, probes, end_query_api)
-        try:
-            response = requests.get(url)
-            text = requests.get(url).json()
-        except requests.exceptions.RequestException as e:
-            logging.getLogger(__name__).info(e)
-            raise
+        text = util.from_brainmap_retrieve_microarray_filterby_donorids_probeids(probe_ids=self.probe_ids, donor_id=donor_id)
         data = text['msg']
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
@@ -276,61 +267,8 @@ class Analysis:
             logging.getLogger(__name__).info('For {} samples_length: {}  probes_length: {} zscores_shape: {} '.format(donor_id,len(data['samples']),len(data['probes']), zscores.shape))
         return {'samples' : data['samples'], 'probes' : data['probes'], 'zscores' : zscores}
 
-    def filter_coordinates_and_zscores(self, roi, index_to_samples_zscores_and_specimen_dict, specimen, index):
-        """
-        Populate self.filtered_coords_and_zscores with zscores and coords for samples which belong to a particular specimen and spatially represented in the given roi.
-        Args:
-              roi (nib.nifti1.Nifti1Image): probability map of a region of interest.
-              index_to_samples_zscores_and_specimen_dict (dict): Index into samples_zscores_and_specimen_dict
-              specimen (dict): dictionary representing a specimen with its name and transformation matrix as keys
-              index (int): 0 or 1, representing which region of interest it is.
-        Returns:
-                dict : Contains the following keys -
-                       a) zscores - Lists of zscore corresponding to the Allen Brain coordinates (in MNI152 space) which are spatially represented in region of interest given by roi parameter.
-                       b) coords - Lists of Allen Brain coordinates (in MNI152 space) which are spatially represented in region of interest given by roi parameter.
-                       c) coord_well - Lists of well id for all the samples which are spatially represented in region of interest given by roi parameter.
-                       d) coord_polygon - Lists of polygon id for all the samples which are spatially represented in region of interest given by roi parameter.
-                       e) specimen - same as specimen['name'].
-                       f) name - 'img1' representing first region of interest, 'img2' representing second region of interest.
-        """
-        revised_samples_zscores_and_specimen_dict = dict.fromkeys(['zscores', 'coords', 'coord_well', 'coord_polygon', 'specimen', 'name'])
-        revised_samples_zscores_and_specimen_dict['realname'] = roi['name']
-        revised_samples_zscores_and_specimen_dict['name'] = 'img{}'.format(str(index+1))
-        img_arr = roi['data'].get_data()
-        invroiMni = np.linalg.inv(roi['data'].affine)
-        T = np.dot(invroiMni, specimen['alignment3d'])
-        '''
-        coords = transform_samples_MRI_to_MNI152(index_to_samples_zscores_and_specimen_dict['samples'], T)
-        coords = (np.rint(coords)).astype(int)
-        coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or img_arr[coord[0],coord[1],coord[2]] <= self.filter_threshold or img_arr[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
-        revised_samples_zscores_and_specimen_dict['coords'] = [coord for coord in coords if (coord > 0).sum() == 3]
-        '''
-        coords_dict = transform_samples_MRI_to_MNI152(index_to_samples_zscores_and_specimen_dict['samples'], T)
-        coords = (np.rint(coords_dict['mnicoords'])).astype(int)
-        coords = [np.array([-1, -1, -1]) if (coord > 0).sum() != 3 or img_arr[coord[0],coord[1],coord[2]] <= self.filter_threshold or img_arr[coord[0],coord[1],coord[2]] == 0 else coord for coord in coords]
-        revised_samples_zscores_and_specimen_dict['coords'] = [coord for coord in coords if (coord > 0).sum() == 3]
-        revised_samples_zscores_and_specimen_dict['coord_well'] = [well for (coord, well) in zip(coords, coords_dict['well']) if (coord > 0).sum() == 3]
-        revised_samples_zscores_and_specimen_dict['coord_polygon'] = [polygon for (coord, polygon) in zip(coords, coords_dict['polygon']) if (coord > 0).sum() == 3]
-        revised_samples_zscores_and_specimen_dict['zscores'] = [zscore for (coord, zscore) in zip(coords, index_to_samples_zscores_and_specimen_dict['zscores']) if (coord > 0).sum() == 3]
-        revised_samples_zscores_and_specimen_dict['specimen'] = specimen['name']
-        return revised_samples_zscores_and_specimen_dict
-
-
     def __download_and_save_zscores_and_samples_partial(self, donor_id):
-        """
-        Query Allen Brain Api for the given set of genes if they have not already been downloaded to gene_cache and save them on disk
-        Args:
-              donor_id (int): Id of a donor which is used to query Allen Brain API.
-        """
-        base_url_download_and_save_zscores_samples_partial = "http://api.brain-map.org/api/v2/data/query.json?criteria=service::human_microarray_expression[probes$in"
-        probes = ''.join('{},'.format(probe) for probe in self.probe_ids)[:-1]
-        end_url_download_and_save_zscores_samples_partial = "][donors$eq{}]".format(donor_id)
-        url = '{}{}{}'.format(base_url_download_and_save_zscores_samples_partial, probes, end_url_download_and_save_zscores_samples_partial)
-        try:
-            text = requests.get(url).json()
-        except requests.exceptions.RequestException as e:
-            logging.getLogger(__name__).error(e)
-            raise
+        text = util.from_brainmap_retrieve_microarray_filterby_donorids_probeids(probe_ids=self.probe_ids, donor_id=donor_id)
         data = text['msg']
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
@@ -356,17 +294,10 @@ class Analysis:
         Download names and transformation matrix for each specimen/donor from Allen Brain Api and save them on disk as specimenName.txt
         and specimenMat.txt respectively, load.
         """
-        base_url_download_specimens = "http://api.brain-map.org/api/v2/data/Specimen/query.json?criteria=[name$eq"+"'"
-        end_url_download_specimens = "']&include=alignment3d"
         specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
         self.samples_zscores_and_specimen_dict['specimen_info'] = []
         for specimen_id in specimens:
-            url = '{}{}{}'.format(base_url_download_specimens, specimen_id, end_url_download_specimens)
-            try:
-                text = requests.get(url).json()
-            except requests.exceptions.RequestException as e:
-                logging.getLogger(__name__).info(e)
-                raise
+            text = util.from_brainmap_retrieve_specimen(specimen_id, verbose=self.verbose)
             self.samples_zscores_and_specimen_dict['specimen_info'] = self.samples_zscores_and_specimen_dict['specimen_info'] + [get_specimen_data(text['msg'][0])]
         if self.verbose:
             logging.getLogger(__name__).info('{}'.format(self.samples_zscores_and_specimen_dict['specimen_info']))
@@ -534,7 +465,7 @@ class Analysis:
             self.anova_factors['Zscores'] = self.combined_zscores[:,index_to_gene_list]
         else:
             self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,index_to_gene_list]
-#        self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,index_to_gene_list]
+            # self.anova_factors['Zscores'] = self.genesymbol_and_mean_zscores['combined_zscores'][:,index_to_gene_list]
         mod = ols('Zscores ~ Area + Specimen + Age + Race', data=self.anova_factors).fit()
         aov_table = sm.stats.anova_lm(mod, typ=1)
         return aov_table['F'][0]
