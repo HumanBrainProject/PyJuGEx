@@ -40,8 +40,8 @@ else:
 0.6
 
 ## Authors
-
 * Big Data Analytics Group, INM-1, Research Center Juelich
+
 ## Acknowledgments
 * Haimasree Bhattacharya
 * Dr. Sebastian Bludau, Dr. Thomas Mühleisen
