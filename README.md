@@ -41,7 +41,7 @@ else:
 
 * Big Data Analytics Group, INM-1, Research Center Juelich
 ## Acknowledgments
-
+* Haimasree Bhattacharya
 * Dr. Sebastian Bludau, Dr. Thomas Mühleisen
 * Dr. Timo Dickscheid and other members of BDA-INM1 
 
