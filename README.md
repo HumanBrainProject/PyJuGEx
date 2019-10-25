@@ -1,10 +1,17 @@
 # pyjugex
-Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package. 
+Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package.
 
-# Website
-[[http://www.fz-juelich.de/inm/inm-1/DE/Forschung/_docs/JuGex/JuGex_node.html]]
+### Website
+[http://www.fz-juelich.de/inm/inm-1/DE/Forschung/_docs/JuGex/JuGex_node.html](JuGex)
 
-## Dependencies
+## Installation
+```
+git clone https://github.com/HumanBrainProject/PyJuGEx
+cd pyjugex
+pip install -r requirements.txt
+pip install .
+```
+### Dependencies
 * numpy
 * scipy
 * statsmodels
@@ -12,14 +19,7 @@ Find a set of differentially expressed genes between two user defined volumes of
 * nibabel
 * xmltodict
 
-### Installation
-```
-git clone https://github.com/HumanBrainProject/PyJuGEx
-cd pyjugex
-pip install -r requirements.txt 
-pip install .
-```
-### Usage
+## Usage
 A typical usage is as follows:
 ```
 from pyjugex import pyjugex
@@ -45,8 +45,7 @@ else:
 ## Acknowledgments
 * Haimasree Bhattacharya
 * Dr. Sebastian Bludau, Dr. Thomas Mühleisen
-* Dr. Timo Dickscheid and other members of BDA-INM1 
+* Dr. Timo Dickscheid and other members of BDA-INM1
 
 ## Reference
 Sebastian Bludau, Thomas W. Mühleisen, Simon B. Eickhoff, Michael J. Hawrylycz, Sven Cichon, Katrin Amunts. Integration of transcriptomic and cytoarchitectonic data implicates a role for MAOA and TAC1 in the limbic-cortical network. 2018, Brain Structure and Function. https://doi.org/10.1007/s00429-018-1620-6
-
