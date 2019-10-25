@@ -20,7 +20,7 @@ pip install -r requirements.txt
 pip install .
 ```
 ### Usage
-A typical usage is as follows -
+A typical usage is as follows:
 ```
 from pyjugex import pyjugex
 from pyjugex import hbp_human_atlas as atlas
