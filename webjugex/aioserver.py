@@ -21,7 +21,7 @@ else:
     gene_cache_dir = '.pyjugex'
 
 def get_roi_img_array(obj):
-    pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], body=obj['body'] if 'body' in obj else None)
+    pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
     return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(obj['PMapURL']))
 
 def run_pyjugex_analysis(jsonobj):
@@ -73,7 +73,7 @@ async def handle_post2(request):
         except Exception as e:
             error = {}
             error['error'] = e
-            requests.post(jsonobj["cbUrl"], json=json.loads(error))
+            requests.post(jsonobj["cbUrl"], json=error)
             print("result callback error", e)
     else:
         try:
