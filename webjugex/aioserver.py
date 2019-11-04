@@ -73,7 +73,7 @@ async def handle_post2(request):
         except Exception as e:
             error = {}
             error['error'] = e
-            requests.post(jsonobj["cbUrl"], json=json.loads(error)
+            requests.post(jsonobj["cbUrl"], json=json.loads(error))
             print("result callback error", e)
     else:
         try:
