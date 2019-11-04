@@ -36,9 +36,9 @@ def run_pyjugex_analysis(jsonobj):
     roi2['data'] = get_roi_img_array(roi2_obj)
     roi2['name'] = jsonobj['area2']['name']
 
-    single_probe_mode = jsonobj['mode'] if jsonobj['mode'] is not None else default_param['mode']
-    filter_threshold = jsonobj['threshold'] if jsonobj['threshold'] is not None else default_param['threshold']
-    n_rep = jsonobj['nPermutations'] if jsonobj['nPermutations'] is not None else default_param['nPermutations']
+    single_probe_mode = jsonobj.get('mode', default_param['mode'])
+    filter_threshold = jsonobj.get('threshold', default_param['threshold'])
+    n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
     jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
 
