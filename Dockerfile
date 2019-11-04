@@ -1,8 +1,5 @@
 FROM python:3
 
-ARG GENE_CACHE_DIR
-ENV GENE_CACHE_DIR=$GENE_CACHE_DIR
-
 COPY . /webjugex
 WORKDIR /webjugex
 
