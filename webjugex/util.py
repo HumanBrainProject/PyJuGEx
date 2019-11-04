@@ -5,6 +5,7 @@ import os
 import re
 import logging
 import xmltodict
+import numpy as np
 
 # given url as either a string or obj, interpretes, and performs get/post request
 # returns resp
@@ -29,7 +30,7 @@ def read_byte_via_nib(content, gzip=False):
   return img_array
 
 def is_gzipped(filename):
-  re.search("\.gz$", filename)
+  return re.search("\.gz$", filename) is not None
 
 def from_brainmap_retrieve_gene(gene, verbose=False):
 
@@ -88,6 +89,32 @@ def from_brainmap_retrieve_microarray_filterby_donorids_probeids(donor_id, probe
     return resp.json()
   else:
     raise requests.exceptions.HTTPError
+
+# TODO cleanup
+# TODO need tests
+def transform_samples_MRI_to_MNI152(samples, transformation_mat):
+    """
+    Convert the MRI coordinates of samples to MNI152 space
+    Args:
+          samples (dict): Contains mri coordinates, well and polygon id for each sample used in Allen Brain.
+          transformation_mat (numpy.ndarray): A 4x4 numpy array to convert the above mentioned MRI coordinates to MNI152 space.
+    Returns:
+          dict: A dictionary containing three keys -
+            mnicoords - two dimensional numpy array where each row represents a three dimensional coordinate in MNI152 space, for all the samples.
+            well - list of well id for the sample the respective coordinate belongs to
+            polygon -  list of polygon id for the sample the respective coordinate belongs to
+    """
+    np_T = np.array(transformation_mat[0:3, 0:4])
+    mri = np.vstack(s['sample']['mri'] for s in samples)
+    add = np.ones((len(mri), 1), dtype=np.int)
+    mri = np.append(mri, add, axis=1)
+    mri = np.transpose(mri)
+    coords = np.matmul(np_T, mri)
+    coords = coords.transpose()
+    well = [s['sample']['well'] for s in samples]
+    polygon = [s['sample']['polygon'] for s in samples]
+    return {'mnicoords' : coords, 'well' : well, 'polygon' : polygon}
+    #return coords
 
 # TODO write test
 def filter_coordinates_and_zscores(roi_nii, index_to_samples_zscores_and_specimen_dict, specimen, index, roi_name='Unnamed ROI', filter_threshold=0.2):

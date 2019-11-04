@@ -1,4 +1,5 @@
 from webjugex import util
+import pytest
 
 test_nii_url = 'https://neuroglancer.humanbrainproject.eu/precomputed/JuBrain/17/icbm152casym/pmaps/OFC_Fo1_l_N10_nlin2MNI152ASYM2009C_3.4_publicP_b76752e4ec43a64644f4a66658fed730.nii.gz'
 
@@ -8,8 +9,9 @@ def test_get_pmap():
 
 def test_read_byte_via_nib():
   resp = util.get_pmap(test_nii_url)
-  img_array = util.read_byte_via_nib(resp.content)
-  assert img_array.get_shape() = (193, 229, 193)
+  img_array = util.read_byte_via_nib(resp.content, gzip=util.is_gzipped(test_nii_url))
+  
+  assert img_array.shape == (193, 229, 193)
 
 def test_is_gzipped():
   not_gzipped = 'test.nii'
@@ -24,7 +26,8 @@ def test_is_gzipped():
 
 def test_from_brainmap_retrieve_gene():
   resp_dist = util.from_brainmap_retrieve_gene('MAOA')
-  total_rows = int(resp_dist['@total_rows'])
+  print(resp_dist.keys())
+  total_rows = int(resp_dist['Response']['@total_rows'])
   assert total_rows > 0
 
 def test_from_brainmap_retrieve_specimen():
