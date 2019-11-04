@@ -11,8 +11,12 @@ import numpy as np
 # returns resp
 # may raise HTTP exception
 
-def get_pmap(url, body=None):
-  resp = requests.get(url) if body is None else requests.post(url, body=body)
+def get_pmap(url, json=None):
+  if json is None:
+    resp = requests.get(url)
+  else:
+    resp = requests.post(url, json=json)
+  
   if resp.ok:
     return resp
   else:
