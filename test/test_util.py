@@ -1,5 +1,6 @@
 from webjugex import util
 import pytest
+from requests.exceptions import HTTPError
 
 test_nii_url = 'https://neuroglancer.humanbrainproject.eu/precomputed/JuBrain/17/icbm152casym/pmaps/OFC_Fo1_l_N10_nlin2MNI152ASYM2009C_3.4_publicP_b76752e4ec43a64644f4a66658fed730.nii.gz'
 test_pmap_service = 'http://pmap-pmap-service.apps-dev.hbp.eu'
@@ -20,6 +21,21 @@ def test_get_pmap():
   )
   resp = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json)
   assert resp.ok
+
+  json_not_ok = dict(
+    areas=[dict(
+      name="Area-Fp1",
+      hemisphere="left"
+    ),dict(
+      name="Area-Fp2",
+      hemisphere="left"
+    )]
+  )
+
+  with pytest.raises(HTTPError) as error:
+    resp_not_ok = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json_not_ok)
+    assert error.response.status_code == 500
+
 
 
 def test_read_byte_via_nib():
@@ -56,4 +72,3 @@ def test_from_brainmap_retrieve_microarray_filterby_donorids_probeids():
   donor_id = '15496'
   resp = util.from_brainmap_retrieve_microarray_filterby_donorids_probeids(donor_id=donor_id, probe_ids=probe_ids)
   assert resp['success']
-  

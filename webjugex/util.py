@@ -17,10 +17,8 @@ def get_pmap(url, json=None):
   else:
     resp = requests.post(url, json=json)
   
-  if resp.ok:
-    return resp
-  else:
-    resp.raise_for_status()
+  resp.raise_for_status()
+  return resp
 
 # input is byte
 # save to cache, then generate a random hashed file name
