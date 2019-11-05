@@ -72,8 +72,8 @@ async def handle_post2(request):
             requests.post(jsonobj["cbUrl"], json=json.loads(data))
         except Exception as e:
             error = {}
-            error['error'] = e
-            requests.post(jsonobj["cbUrl"], content_type="application/json", body=str(error))
+            error['error'] = str(e)
+            requests.post(jsonobj["cbUrl"], json=error)
             print("result callback error")
             print("jsonobj", jsonobj)
             print("error", e)
