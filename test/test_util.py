@@ -1,9 +1,11 @@
 from webjugex import util
 import pytest
 from requests.exceptions import HTTPError
+import re
 
 test_nii_url = 'https://neuroglancer.humanbrainproject.eu/precomputed/JuBrain/17/icbm152casym/pmaps/OFC_Fo1_l_N10_nlin2MNI152ASYM2009C_3.4_publicP_b76752e4ec43a64644f4a66658fed730.nii.gz'
 test_pmap_service = 'http://pmap-pmap-service.apps-dev.hbp.eu'
+
 
 def test_get_pmap():
   resp = util.get_pmap(test_nii_url)
@@ -36,6 +38,25 @@ def test_get_pmap():
     resp_not_ok = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json_not_ok)
     assert error.response.status_code == 500
 
+def test_get_filename_from_resp():
+
+  resp = util.get_pmap(test_nii_url)
+  assert util.get_filename_from_resp(resp) == test_nii_url
+
+  json = dict(
+    areas=[dict(
+      name="Area-Fp1",
+      hemisphere="left"
+    ),dict(
+      name="Area-Fp2",
+      hemisphere="left"
+    )],
+    threshold=0.2
+  )
+
+  resp = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json)
+  filename = util.get_filename_from_resp(resp)
+  assert re.search(r"merged.*?\.nii\.gz$", filename) is not None
 
 
 def test_read_byte_via_nib():

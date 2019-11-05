@@ -7,10 +7,10 @@ import webjugex
 import os
 import requests
 import socket
+import re
 
 import HBPLogger
 from default import default_param
-
 
 _fluent_host = os.getenv('FLUENT_HOST', None)
 _fluent_protocol = os.getenv('FLUENT_PROTOCOL', None)
@@ -32,7 +32,9 @@ else:
 
 def get_roi_img_array(obj):
     pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
-    return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(obj['PMapURL']))
+    
+    filename = util.get_filename_from_resp(pmap_resp)
+    return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
 
 def run_pyjugex_analysis(jsonobj):
     roi1 = {}
