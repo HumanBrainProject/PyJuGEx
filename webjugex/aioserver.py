@@ -16,7 +16,7 @@ _fluent_host = os.getenv('FLUENT_HOST', None)
 _fluent_protocol = os.getenv('FLUENT_PROTOCOL', None)
 _logger_url = '{protocol}://{hostname}/'.format(protocol=_fluent_protocol, hostname=_fluent_host) if _fluent_host is not None and _fluent_protocol is not None else None
 _application_name = os.getenv('APPLICATION_NAME', 'webjugex-backend')
-_deployment = os.getenv('DEPLOYMENT', None)
+_deployment = os.getenv('DEPLOYMENT', 'local')
 
 logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 
@@ -105,6 +105,7 @@ def main():
     cors.add(app.router.add_post("/jugex_v2", handle_post2), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_get("/",return_auto_complete), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_static('/public/',path=str('./public/')))
+    logger.log('info', {"message": "webjugex backend started"})
     web.run_app(app,host="0.0.0.0",port=8003)
 
 if __name__=='__main__':
