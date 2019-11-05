@@ -6,9 +6,19 @@ import hbp_human_atlas as atlas
 import webjugex
 import os
 import requests
+import socket
 
+import HBPLogger
 from default import default_param
 
+
+_fluent_host = os.getenv('FLUENT_HOST', None)
+_fluent_protocol = os.getenv('FLUENT_PROTOCOL', None)
+_logger_url = '{protocol}://{hostname}/'.format(protocol=_fluent_protocol, hostname=_fluent_host) if _fluent_host is not None and _fluent_protocol is not None else None
+_application_name = os.getenv('APPLICATION_NAME', 'webjugex-backend')
+_deployment = os.getenv('DEPLOYMENT', None)
+
+logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
@@ -54,7 +64,7 @@ async def handle_post(request):
         data = run_pyjugex_analysis(jsonobj)
         return web.Response(status=200,content_type="application/json",body=data)
     except Exception as e:
-        print(e)
+        logger.log('error', {"error":str(e)})
         return web.Response(status=400,body=str(e))
 
 async def return_auto_complete(request):
@@ -71,18 +81,20 @@ async def handle_post2(request):
             data = run_pyjugex_analysis(jsonobj)
             requests.post(jsonobj["cbUrl"], json=json.loads(data))
         except Exception as e:
-            error = {}
-            error['error'] = str(e)
+            error = {
+                "error": str(e),
+                "detail": {
+                    "jsonobj": jsonobj
+                }
+            }
+            logger.log('error', error)
             requests.post(jsonobj["cbUrl"], json=error)
-            print("result callback error")
-            print("jsonobj", jsonobj)
-            print("error", e)
     else:
         try:
             data = run_pyjugex_analysis(jsonobj)
             return web.Response(status=200, content_type="application/json", body=data)
         except Exception as e:
-            print(e)
+            logger.log('error', {"error":str(e)})
             return web.Response(status=400,body=str(e))
 
 def main():
