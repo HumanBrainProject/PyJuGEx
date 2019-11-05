@@ -33,7 +33,7 @@ else:
 def get_roi_img_array(obj):
     pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
     
-    filename = util.get_filename_from_resp(pmap_resp)
+    filename = webjugex.util.get_filename_from_resp(pmap_resp)
     return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
 
 def run_pyjugex_analysis(jsonobj):
