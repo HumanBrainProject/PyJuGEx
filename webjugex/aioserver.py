@@ -73,12 +73,14 @@ async def handle_post2(request):
         except Exception as e:
             error = {}
             error['error'] = e
-            requests.post(jsonobj["cbUrl"], json=error)
-            print("result callback error", e)
+            requests.post(jsonobj["cbUrl"], content_type="application/json", body=str(error))
+            print("result callback error")
+            print("jsonobj", jsonobj)
+            print("error", e)
     else:
         try:
             data = run_pyjugex_analysis(jsonobj)
-            return web.Response(status=200,content_type="application/json",body=data)
+            return web.Response(status=200, content_type="application/json", body=data)
         except Exception as e:
             print(e)
             return web.Response(status=400,body=str(e))
