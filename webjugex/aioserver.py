@@ -6,9 +6,19 @@ import hbp_human_atlas as atlas
 import webjugex
 import os
 import requests
+import socket
+import re
 
+import HBPLogger
 from default import default_param
 
+_fluent_host = os.getenv('FLUENT_HOST', None)
+_fluent_protocol = os.getenv('FLUENT_PROTOCOL', None)
+_logger_url = '{protocol}://{hostname}/'.format(protocol=_fluent_protocol, hostname=_fluent_host) if _fluent_host is not None and _fluent_protocol is not None else None
+_application_name = os.getenv('APPLICATION_NAME', 'webjugex-backend')
+_deployment = os.getenv('DEPLOYMENT', 'local')
+
+logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
@@ -21,8 +31,10 @@ else:
     gene_cache_dir = '.pyjugex'
 
 def get_roi_img_array(obj):
-    pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], body=obj['body'] if 'body' in obj else None)
-    return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(obj['PMapURL']))
+    pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
+    
+    filename = webjugex.util.get_filename_from_resp(pmap_resp)
+    return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
 
 def run_pyjugex_analysis(jsonobj):
     roi1 = {}
@@ -54,7 +66,7 @@ async def handle_post(request):
         data = run_pyjugex_analysis(jsonobj)
         return web.Response(status=200,content_type="application/json",body=data)
     except Exception as e:
-        print(e)
+        logger.log('error', {"error":str(e)})
         return web.Response(status=400,body=str(e))
 
 async def return_auto_complete(request):
@@ -71,16 +83,20 @@ async def handle_post2(request):
             data = run_pyjugex_analysis(jsonobj)
             requests.post(jsonobj["cbUrl"], json=json.loads(data))
         except Exception as e:
-            error = {}
-            error['error'] = e
-            requests.post(jsonobj["cbUrl"], json=json.loads(error))
-            print("result callback error", e)
+            error = {
+                "error": str(e),
+                "detail": {
+                    "jsonobj": jsonobj
+                }
+            }
+            logger.log('error', error)
+            requests.post(jsonobj["cbUrl"], json=error)
     else:
         try:
             data = run_pyjugex_analysis(jsonobj)
-            return web.Response(status=200,content_type="application/json",body=data)
+            return web.Response(status=200, content_type="application/json", body=data)
         except Exception as e:
-            print(e)
+            logger.log('error', {"error":str(e)})
             return web.Response(status=400,body=str(e))
 
 def main():
@@ -91,6 +107,7 @@ def main():
     cors.add(app.router.add_post("/jugex_v2", handle_post2), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_get("/",return_auto_complete), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_static('/public/',path=str('./public/')))
+    logger.log('info', {"message": "webjugex backend started"})
     web.run_app(app,host="0.0.0.0",port=8003)
 
 if __name__=='__main__':
