@@ -1,7 +1,5 @@
-from util import ValueMissingError
+from .util import NotYetImplementedError, ValueMissingError
 import json
-with open('data/genesymbols.json', 'r') as f:
-  gene_symbol_arr = f.read()
 
 class PyjugexAnalysis:
   """
@@ -43,7 +41,7 @@ class PyjugexAnalysis:
     """
     Returns list of gene symbols.
     """
-    return json.loads(gene_symbol_arr)
+    raise NotYetImplementedError('get_gene_list is not yet implemented')
 
   def _check_prereq(self):
     """
@@ -58,7 +56,7 @@ class PyjugexAnalysis:
       error_message.append(' gene_list is empty ')
     if error_message != '':
       raise ValueMissingError(','.join(error_message))
-    return true
+    return True
     
   
   def differential_analysis(self):
@@ -66,4 +64,4 @@ class PyjugexAnalysis:
     Start differential analysis 
     """
     self._check_prereq()
-    return 0
+    pass

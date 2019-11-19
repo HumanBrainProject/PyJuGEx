@@ -1,5 +1,4 @@
-from main import PyjugexAnalysis
-from util import ValueMissingError
+from pyjugex import PyjugexAnalysis, ValueMissingError
 
 import pytest
 
