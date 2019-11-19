@@ -1,7 +1,7 @@
 from setuptools import setup
-setup(name='webjugex',
-      version='0.1',
-      packages=['webjugex'],
+setup(name='pyjugex',
+      version='1.0.0',
+      packages=['pyjugex'],
       license='BSD',
       description='Perform web based differential gene expression on two chosen brain regions',
       url='https://github.com/HumanBrainProject/PyJuGEx',

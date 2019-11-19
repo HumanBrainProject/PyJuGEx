@@ -84,6 +84,8 @@ class Analysis:
         self.gene_symbols = []
         self.gene_cache = {}
         self.donor_ids = ['15496', '14380', '15697', '9861', '12876', '10021'] #HARDCODING donor_ids
+
+        # depends on donor id
         self.samples_zscores_and_specimen_dict = dict.fromkeys(['samples_and_zscores', 'specimen_info'])
         self.specimen_factors = dict.fromkeys(['id', 'name', 'race', 'gender', 'age'])
         self.samples_zscores_and_specimen_dict['specimen_info'] = []

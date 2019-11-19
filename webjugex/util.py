@@ -93,10 +93,9 @@ def from_brainmap_retrieve_microarray_filterby_donorids_probeids(donor_id, probe
   url = '{}{}{}'.format(base_query_api, probes, end_query_api)
 
   resp = requests.get(url)
-  if resp.ok:
-    return resp.json()
-  else:
-    raise requests.exceptions.HTTPError
+
+  resp.raise_for_status()
+  return resp.json()
 
 # TODO cleanup
 # TODO need tests
