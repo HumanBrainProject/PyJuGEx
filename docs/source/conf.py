@@ -10,16 +10,25 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../../webjugex'))
+# import os
+# import sys
+# sys.path.insert(0, os.path.abspath('.'))
 
+from recommonmark.transform import AutoStructify
+
+def setup(app):
+  app.add_config_value('recommonmark_config', {
+    'enable_auto_toc_tree': True,
+    'enable_eval_rst': True,
+    'auto_toc_maxdepth': 3
+  }, True)
+  app.add_transform(AutoStructify)
 
 # -- Project information -----------------------------------------------------
 
 project = 'PyJuGEx'
-copyright = '2019, foobar'
-author = 'foobar'
+copyright = '2019, Forschungzentrum Juelich'
+author = 'Forschungzentrum Juelich'
 
 
 # -- General configuration ---------------------------------------------------
@@ -29,8 +38,14 @@ author = 'foobar'
 # ones.
 extensions = [
   'sphinx.ext.autodoc',
+  'recommonmark'
 ]
 
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
