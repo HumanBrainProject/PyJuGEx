@@ -1,2 +1,2 @@
 from .pyjugex import PyjugexAnalysis
-from .util import ValueMissingError, NotYetImplementedError 
+from .error import ValueMissingError, NotYetImplementedError 

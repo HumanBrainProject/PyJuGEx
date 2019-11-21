@@ -386,21 +386,20 @@ class Analysis:
         """
         Prepare self.anova_factors. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_factors
         """
+        #Populates self.genesymbol_and_mean_zscores (uniqueid and zscores)
         if self.single_probe_mode:
             self.combined_zscores = np.array([roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))])
+            self.n_genes = len(self.combined_zscores[0])
         else:
             combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
+            self.get_mean_zscores(combined_zscores)
+            self.n_genes = len(self.genesymbol_and_mean_zscores['combined_zscores'][0])
         #combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
         self.read_specimen_factors(self.cache_dir)
         if self.verbose:
             logging.getLogger(__name__).info("number of specimens: {} name: {}".format(len(self.specimen_factors), len(self.specimen_factors['name'])))
-        #Populates self.genesymbol_and_mean_zscores (uniqueid and zscores)
-        if self.single_probe_mode:
-            self.n_genes = len(self.combined_zscores[0])
-        else:
-            self.get_mean_zscores(combined_zscores)
-            self.n_genes = len(self.genesymbol_and_mean_zscores['combined_zscores'][0])
+
         self.anova_factors['Area'] = [roi_coord_and_zscore['name'] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         self.anova_factors['Specimen'] = [roi_coord_and_zscore['specimen'] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         '''
