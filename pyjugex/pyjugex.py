@@ -108,6 +108,7 @@ class PyjugexAnalysis:
         filtered_coords_and_zscores.append(
           filter_coordinates_and_zscores(
             roi_nii=roi,
+            roi_name=f'roi{index + 1}',
             index=index,
             index_to_samples_zscores_and_specimen_dict=samples_zscores_and_specimen_dict['samples_and_zscores'][o_index],
             specimen=specimen_info,
