@@ -3,17 +3,34 @@
 
 Find a set of differentially expressed genes between two user defined volumes of interest based on JuBrain maps. The tool downloads expression values of user specified sets of genes from Allen Brain API. Then, it uses zscores to find which genes are expressed differentially between the user specified regions of interests. This tool is available as a Python package.
 
+[JuGEx homepage](http://www.fz-juelich.de/inm/inm-1/DE/Forschung/_docs/JuGex/JuGex_node.html)
+
+[Documentation at readthedocs.io](https://pyjugex.readthedocs.io/en/latest/index.html)
+
+[Repo at Github](https://github.com/HumanBrainProject/PyJuGEx)
+
+
 ### Website
 http://www.fz-juelich.de/inm/inm-1/DE/Forschung/_docs/JuGex/JuGex_node.html
 
 ## Installation
+Via pip:
+```
+pip install pyjugex
+```
+or from source
 ```
 git clone https://github.com/HumanBrainProject/PyJuGEx
 cd pyjugex
 pip install -r requirements.txt
 pip install .
 ```
-### Dependencies
+
+## Usage
+
+[see example usage](docs/source/example_usage.md)
+
+## Dependencies
 * numpy
 * scipy
 * statsmodels
@@ -21,25 +38,8 @@ pip install .
 * nibabel
 * xmltodict
 
-## Usage
-A typical usage is as follows:
-```
-from pyjugex import pyjugex
-from pyjugex import hbp_human_atlas as atlas
-genelist = ['ADRA2A', 'AVPR1B', 'CHRM2']
-roi1 = atlas.jubrain.probability_map('FP1', atlas.MNI152)
-roi2 = atlas.jubrain.probability_map('FP2', atlas.MNI152)
-jugex = pyjugex.Analysis(gene_cache_dir='.pyjugex', verbose=True)
-result = jugex.DifferentialAnalysis(genelist, roi1, roi2)
-if len([id for id in result if result[id] < .05]) > 0:
-    print('Differentially expressed genes/probes are : ')
-    print([id for id in result if result[id] < .05])
-else:
-    print('There are no differentially expressed genes/probes in the given regions')
-```
-
 ## Versioning
-0.6
+1.0.1alpha
 
 ## Authors
 * Big Data Analytics Group, INM-1, Research Center Juelich
