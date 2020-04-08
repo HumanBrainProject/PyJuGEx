@@ -1,4 +1,7 @@
-from webjugex import util
+import sys
+sys.path.append("..")
+
+from pyjugex import util
 import pytest
 from requests.exceptions import HTTPError
 import re
