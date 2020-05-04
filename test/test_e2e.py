@@ -4,7 +4,7 @@ sys.path.append('..')
 import os
 nii_dir = os.path.dirname(os.path.abspath(__file__))
 
-from pyjugex import PyjugexAnalysis
+import pyjugex
 import nibabel as nib
 
 def test_e2e():
@@ -13,7 +13,7 @@ def test_e2e():
 
   nii1 = nib.load(os.path.join(nii_dir, 'data/hoc1_th_l.nii.gz'))
   nii2 = nib.load(os.path.join(nii_dir, 'data/hoc2_th_l.nii.gz'))
-  analysis = PyjugexAnalysis(
+  analysis = pyjugex.analysis(
     gene_list=gene_list,
     roi1 = nii1,
     roi2 = nii2
