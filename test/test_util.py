@@ -10,64 +10,6 @@ test_nii_url = 'https://neuroglancer.humanbrainproject.eu/precomputed/JuBrain/17
 test_pmap_service = 'http://pmap-pmap-service.apps-dev.hbp.eu'
 
 
-def test_get_pmap():
-  resp = util.get_pmap(test_nii_url)
-  assert resp.ok
-
-  json = dict(
-    areas=[dict(
-      name="Area-Fp1",
-      hemisphere="left"
-    ),dict(
-      name="Area-Fp2",
-      hemisphere="left"
-    )],
-    threshold=0.2
-  )
-  resp = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json)
-  assert resp.ok
-
-  json_not_ok = dict(
-    areas=[dict(
-      name="Area-Fp1",
-      hemisphere="left"
-    ),dict(
-      name="Area-Fp2",
-      hemisphere="left"
-    )]
-  )
-
-  with pytest.raises(HTTPError) as error:
-    resp_not_ok = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json_not_ok)
-    assert error.response.status_code == 500
-
-def test_get_filename_from_resp():
-
-  resp = util.get_pmap(test_nii_url)
-  assert util.get_filename_from_resp(resp) == test_nii_url
-
-  json = dict(
-    areas=[dict(
-      name="Area-Fp1",
-      hemisphere="left"
-    ),dict(
-      name="Area-Fp2",
-      hemisphere="left"
-    )],
-    threshold=0.2
-  )
-
-  resp = util.get_pmap('{pmap_service_url}/multimerge_v2'.format(pmap_service_url=test_pmap_service), json)
-  filename = util.get_filename_from_resp(resp)
-  assert re.search(r"merged.*?\.nii\.gz$", filename) is not None
-
-
-def test_read_byte_via_nib():
-  resp = util.get_pmap(test_nii_url)
-  img_array = util.read_byte_via_nib(resp.content, gzip=util.is_gzipped(test_nii_url))
-  
-  assert img_array.shape == (193, 229, 193)
-
 def test_is_gzipped():
   not_gzipped = 'test.nii'
   not_gzipped_1 = 'https://blabla.com/post?test.nii'

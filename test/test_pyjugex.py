@@ -1,11 +1,10 @@
 import sys
 sys.path.append("..")
 
-from pyjugex import PyjugexAnalysis, ValueMissingError
-
+import pyjugex
 import pytest
 
-def test_PyjugexAnalysis():
-  analysis=PyjugexAnalysis()
-  with pytest.raises(ValueMissingError):
-    analysis.differential_analysis()
+def test_analysis():
+  analysis=pyjugex.analysis()
+  with pytest.raises(pyjugex.ValueMissingError):
+    analysis.run()

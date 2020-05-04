@@ -23,7 +23,7 @@ def test_e2e():
   assert(len(filtered_coord['roi1']) == 12)
   assert(len(filtered_coord['roi2']) == 11)
 
-  analysis.differential_analysis()
+  analysis.run()
 
   maoa = analysis.anova.result.get('MAOA')
   tac1 = analysis.anova.result.get('TAC1')

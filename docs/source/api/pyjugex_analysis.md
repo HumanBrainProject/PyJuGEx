@@ -1,8 +1,8 @@
-# PyjugexAnalysis
+# analysis
 
 ```eval_rst
 
-.. autoclass:: pyjugex.PyjugexAnalysis
+.. autoclass:: pyjugex.analysis
   :members:
 
 ```

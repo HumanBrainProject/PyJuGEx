@@ -1,8 +1,8 @@
-# PyjugexAnova
+# anova
 
 ```eval_rst
 
-.. autoclass:: pyjugex.PyjugexAnova
+.. autoclass:: pyjugex.anova
   :members:
 
 ```

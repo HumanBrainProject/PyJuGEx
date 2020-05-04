@@ -14,10 +14,10 @@ def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
   Returns:
   do_anova_with_permutation_rep()
   """
-  return PyjugexAnova.do_anova_with_permutation_rep(*args, **kwargs)
+  return anova.do_anova_with_permutation_rep(*args, **kwargs)
 
 
-class PyjugexAnova:
+class anova:
   """
   Class for carrying out anova analysis with initialised parameters.
 
