@@ -18,10 +18,9 @@ import numpy as np
 
 class analysis:
   """
-  Rewritten analysis class
-
   Usage:
 
+  ```python
   import nibabel as nib
   nii1 = nib.load('nii1.nii.gz')
   nii2 = nib.load('nii2.nii.gz')
@@ -38,9 +37,14 @@ class analysis:
 
   # the result is also stored in the analysis instance, but will be overwritten if a new run is called
   print(new_analysis.result)
+  ```
+
   """
 
   def __init__(self, n_rep=1000, filter_threshold=0.2, single_probe_mode=False, roi1=None, roi2=None, gene_list=[], verbose=False):
+    """
+    TODO doc
+    """
     self.n_rep=n_rep
     self.filter_threshold=filter_threshold
     self.single_probe_mode=single_probe_mode
