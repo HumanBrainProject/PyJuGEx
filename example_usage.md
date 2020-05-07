@@ -1,4 +1,4 @@
-# Example Usage
+# Example usage
 
 ```python
 
