@@ -16,7 +16,7 @@ from setuptools import setup
 setup(name='pyjugex',
       version='1.0.1alpha',
       packages=['pyjugex'],
-      license='BSD',
+      license='apache-2.0',
       description='Perform web based differential gene expression on two chosen brain regions',
       url='https://github.com/HumanBrainProject/PyJuGEx',
       author='Big Data Analytics Group, INM-1, Research Center Juelich',
