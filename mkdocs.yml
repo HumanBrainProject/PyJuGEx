@@ -1,4 +1,5 @@
-site_name: pyJuGEx
+site_name: pyJuGEx documentation
+site_url: https://pyjugex.readthedocs.io/en/latest/
 
 repo_name: HumanBrainProject/pyjugex
 repo_url: https://github.com/HumanBrainProject/pyjugex
