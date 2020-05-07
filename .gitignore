@@ -110,4 +110,4 @@ venv.bak/
 .vscode
 .pyjugex
 
-doc_venv
+docs_venv
