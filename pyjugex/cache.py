@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
-setup(name='pyjugex',
-      version='1.0.1alpha',
-      packages=['pyjugex'],
-      license='apache-2.0',
-      description='Perform web based differential gene expression on two chosen brain regions',
-      url='https://github.com/HumanBrainProject/PyJuGEx',
-      author='Big Data Analytics Group, INM-1, Research Center Juelich',
-      author_email='inm1-bda@fz-juelich.de',
-      install_requires=[
-            'numpy',
-            'scipy==1.2',
-            'statsmodels',
-            'requests',
-            'nibabel',
-            'xmltodict'
-      ])
+from .error import ValueMissingError
+
+class MemoryCache():
+  def __init__(self):
+    self.store = dict()
+
+  def get_from_key(self, key=None):
+    if key is None:
+      raise ValueMissingError('key is required')
+    return self.store.get(key, None)
+
+  def store_key_value(self, key=None, value=None):
+    if key is None:
+      raise ValueMissingError('key is required')
+    self.store[key] = value

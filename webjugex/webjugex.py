@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import division
 import os
 import numpy as np
@@ -84,6 +99,8 @@ class Analysis:
         self.gene_symbols = []
         self.gene_cache = {}
         self.donor_ids = ['15496', '14380', '15697', '9861', '12876', '10021'] #HARDCODING donor_ids
+
+        # depends on donor id
         self.samples_zscores_and_specimen_dict = dict.fromkeys(['samples_and_zscores', 'specimen_info'])
         self.specimen_factors = dict.fromkeys(['id', 'name', 'race', 'gender', 'age'])
         self.samples_zscores_and_specimen_dict['specimen_info'] = []
@@ -94,7 +111,7 @@ class Analysis:
         self.filter_threshold = float(filter_threshold)
         self.n_rep = n_rep
         self.cache_dir = gene_cache_dir
-        self.verbose = verbose        
+        self.verbose = verbose
         self.single_probe_mode = single_probe_mode
         self.anova_factors = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])
@@ -162,7 +179,7 @@ class Analysis:
         """
 
         for gene in self.gene_list:
-            
+
             data = util.from_brainmap_retrieve_gene(gene=gene, verbose=self.verbose)
 
             if int(data['Response']['@num_rows']) <= 0:
@@ -331,7 +348,7 @@ class Analysis:
             self.retrieve_probe_ids()
             if self.gene_list_to_download:
                 for donor in self.donor_ids:
-                    self.__download_and_save_zscores_and_samples_partial(donor)            
+                    self.__download_and_save_zscores_and_samples_partial(donor)
             self.read_cached_zscores_samples_and_specimen_data()
 
 
@@ -384,21 +401,20 @@ class Analysis:
         """
         Prepare self.anova_factors. Populate Age, Race, Area, Specimen, Zcores keys of self.anova_factors
         """
+        #Populates self.genesymbol_and_mean_zscores (uniqueid and zscores)
         if self.single_probe_mode:
             self.combined_zscores = np.array([roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))])
+            self.n_genes = len(self.combined_zscores[0])
         else:
             combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
+            self.get_mean_zscores(combined_zscores)
+            self.n_genes = len(self.genesymbol_and_mean_zscores['combined_zscores'][0])
         #combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         #Populates self.specimenFactors (id, race, gender, name, age)
         self.read_specimen_factors(self.cache_dir)
         if self.verbose:
             logging.getLogger(__name__).info("number of specimens: {} name: {}".format(len(self.specimen_factors), len(self.specimen_factors['name'])))
-        #Populates self.genesymbol_and_mean_zscores (uniqueid and zscores)
-        if self.single_probe_mode:
-            self.n_genes = len(self.combined_zscores[0])
-        else:
-            self.get_mean_zscores(combined_zscores)
-            self.n_genes = len(self.genesymbol_and_mean_zscores['combined_zscores'][0])
+
         self.anova_factors['Area'] = [roi_coord_and_zscore['name'] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         self.anova_factors['Specimen'] = [roi_coord_and_zscore['specimen'] for roi_coord_and_zscore in self.filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
         '''
