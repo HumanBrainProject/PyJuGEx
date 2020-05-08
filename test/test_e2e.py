@@ -29,5 +29,5 @@ def test_e2e():
   tac1 = analysis.anova.result.get('TAC1')
 
   assert(0.95 <= maoa <= 1.0)
-  assert(0.40 <= tac1 <= 0.52)
+  assert(0.35 <= tac1 <= 0.52)
   
