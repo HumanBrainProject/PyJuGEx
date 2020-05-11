@@ -13,9 +13,6 @@
 # limitations under the License.
 
 import requests
-import tempfile
-import nibabel as nib
-import os
 import re
 import logging
 import xmltodict
@@ -25,36 +22,6 @@ import scipy as sp
 from .cache import MemoryCache
 
 cache = MemoryCache()
-
-def get_filename_from_resp(resp):
-  # determine the type of the file. look at the disposition header, use PMapURL as a fallback
-  content_disposition_header = resp.headers.get('content-disposition')
-  filename = re.search(r'filename=(.*?)$', content_disposition_header).group(1) if content_disposition_header is not None and re.search(r'filename=(.*?)$', content_disposition_header) is not None else resp.url
-  return filename
-
-# given url as either a string or obj, interpretes, and performs get/post request
-# returns resp
-# may raise HTTP exception
-
-def get_pmap(url, json=None):
-  if json is None:
-    resp = requests.get(url)
-  else:
-    resp = requests.post(url, json=json)
-
-  resp.raise_for_status()
-  return resp
-
-# input is byte
-# save to cache, then generate a random hashed file name
-# specify gzip to append .gz
-
-def read_byte_via_nib(content, gzip=False):
-  fp, fp_name = tempfile.mkstemp(suffix='.nii.gz' if gzip else '.nii')
-  os.write(fp, content)
-  img_array = nib.load(fp_name)
-  os.close(fp)
-  return img_array
 
 def is_gzipped(filename):
   return re.search(r"\.gz$", filename) is not None

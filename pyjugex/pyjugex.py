@@ -26,35 +26,39 @@ from .error import (
   NotYetImplementedError,
   ValueMissingError
 )
-from .anova import PyjugexAnova
+from .anova import anova
 import json
 import numpy as np
 
-class PyjugexAnalysis:
+class analysis:
   """
-  Rewritten PyjugexAnalysis class
-
   Usage:
 
+  ```python
   import nibabel as nib
   nii1 = nib.load('nii1.nii.gz')
   nii2 = nib.load('nii2.nii.gz')
 
   # either set variable during init
-  new_analysis = PyjugexAnalysis(n_rep=2000, gene_list=['MAOA', 'TAC1'], roi1=nii1)
+  new_analysis = analysis(n_rep=2000, gene_list=['MAOA', 'TAC1'], roi1=nii1)
 
   # or set them after init
   new_analysis.roi2 = nii2
   new_analysis.single_proble.mode = True
 
   # carry out analysis, this may take awhile
-  result = new_analysis.differential_analysis()
+  result = new_analysis.run()
 
-  # the result is also stored in the analysis instance, but will be overwritten if a new differential_analysis is called
+  # the result is also stored in the analysis instance, but will be overwritten if a new run is called
   print(new_analysis.result)
+  ```
+
   """
 
   def __init__(self, n_rep=1000, filter_threshold=0.2, single_probe_mode=False, roi1=None, roi2=None, gene_list=[], verbose=False):
+    """
+    TODO doc
+    """
     self.n_rep=n_rep
     self.filter_threshold=filter_threshold
     self.single_probe_mode=single_probe_mode
@@ -65,16 +69,9 @@ class PyjugexAnalysis:
 
     self.anova = None
 
-  @staticmethod
-  def get_gene_list():
-    """
-    Returns list of gene symbols.
-    """
-    raise NotYetImplementedError('get_gene_list is not yet implemented')
-
   def _check_prereq(self):
     """
-    Checks that the members of all the prereq has been met to carry out differential_analysis
+    Checks that the members of all the prereq has been met to carry out run
     """
     error_message = []
     if self.roi1 is None:
@@ -131,7 +128,7 @@ class PyjugexAnalysis:
         )
     return filtered_coords_and_zscores
 
-  def differential_analysis(self):
+  def run(self):
     """
     Start differential analysis
     """
@@ -149,7 +146,7 @@ class PyjugexAnalysis:
 
     gene_symbols = get_gene_symbols(self.gene_list)
 
-    self.anova = PyjugexAnova(
+    self.anova = anova(
       area=[roi_coord_and_zscore['name'] for roi_coord_and_zscore in filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))],
       specimen=specimen,
       age=[specimen_factors['age'][specimen_factors['name'].index(specimen_name)] for ind, specimen_name in enumerate(specimen)],

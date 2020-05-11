@@ -19,7 +19,7 @@ import multiprocessing
 from .util import get_mean_zscores
 from .error import ValueMissingError
 
-def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
+def _unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
   """
   Helper function to enable usage of the multiprocessing module inside a class.
   Args:
@@ -28,10 +28,10 @@ def unwrap_self_do_anova_with_permutation_rep(*args, **kwargs):
   Returns:
   do_anova_with_permutation_rep()
   """
-  return PyjugexAnova.do_anova_with_permutation_rep(*args, **kwargs)
+  return anova.do_anova_with_permutation_rep(*args, **kwargs)
 
 
-class PyjugexAnova:
+class anova:
   """
   Class for carrying out anova analysis with initialised parameters.
 
@@ -41,7 +41,9 @@ class PyjugexAnova:
   - n_rep
   """
   def __init__(self, z_scores=None, area=None, specimen=None, age=None, race=None, combined_zscores=None, gene_symbols=None, n_rep=1000, verbose=True):
-
+    """
+    init function for anova
+    """
     if combined_zscores is None:
       raise ValueMissingError('combined_zscores is required')
 
@@ -100,7 +102,7 @@ class PyjugexAnova:
     pool = multiprocessing.Pool()
 
     # double check math here
-    self.F_mat_perm_anovan = np.array(pool.map(unwrap_self_do_anova_with_permutation_rep, [self]*(self.n_rep-1)))
+    self.F_mat_perm_anovan = np.array(pool.map(_unwrap_self_do_anova_with_permutation_rep, [self]*(self.n_rep-1)))
     self.F_mat_perm_anovan = np.insert(self.F_mat_perm_anovan, 0, initial_guess_F_vec, axis=0)
 
   def do_anova_with_permutation_gene(self, index_to_gene_list):

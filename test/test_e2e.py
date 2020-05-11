@@ -18,7 +18,7 @@ sys.path.append('..')
 import os
 nii_dir = os.path.dirname(os.path.abspath(__file__))
 
-from pyjugex import PyjugexAnalysis
+import pyjugex
 import nibabel as nib
 
 def test_e2e():
@@ -27,7 +27,7 @@ def test_e2e():
 
   nii1 = nib.load(os.path.join(nii_dir, 'data/hoc1_th_l.nii.gz'))
   nii2 = nib.load(os.path.join(nii_dir, 'data/hoc2_th_l.nii.gz'))
-  analysis = PyjugexAnalysis(
+  analysis = pyjugex.analysis(
     gene_list=gene_list,
     roi1 = nii1,
     roi2 = nii2
@@ -37,10 +37,11 @@ def test_e2e():
   assert(len(filtered_coord['roi1']) == 12)
   assert(len(filtered_coord['roi2']) == 11)
 
-  analysis.differential_analysis()
+  analysis.run()
 
   maoa = analysis.anova.result.get('MAOA')
   tac1 = analysis.anova.result.get('TAC1')
 
   assert(0.95 <= maoa <= 1.0)
-  assert(0.40 <= tac1 <= 0.52)
+  assert(0.35 <= tac1 <= 0.52)
+  

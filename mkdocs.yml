@@ -1,0 +1,37 @@
+site_name: pyJuGEx documentation
+site_url: https://pyjugex.readthedocs.io/en/latest/
+
+repo_name: HumanBrainProject/pyjugex
+repo_url: https://github.com/HumanBrainProject/pyjugex
+
+theme:
+  name: 'material'
+
+extra_css:
+  - docstring.css
+
+# docs_dir: 
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - mdx_truly_sane_lists
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+      watch:
+        - 'pyjugex'
+
+nav:
+  - Home: 'README.md'
+  - 'example_usage.md'
+  - 'api.md'
+  - Releases:
+    - 'releases/v1.0.1alpha.md'
