@@ -1,3 +1,17 @@
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import requests
 import re
 import logging
@@ -188,7 +202,7 @@ def from_brainmap_on_genes_retrieve_data(genes=[]):
 
   donor_ids = ['15496', '14380', '15697', '9861', '12876', '10021'] #HARDCODING donor_ids
   specimens  = ['H0351.1015', 'H0351.1012', 'H0351.1016', 'H0351.2001', 'H0351.1009', 'H0351.2002']
-  
+
   samples_zscores_and_specimen_dict = {
     "specimen_info":[],
     "samples_and_zscores":[]
@@ -212,7 +226,7 @@ def from_brainmap_on_genes_retrieve_data(genes=[]):
   for donor_id in donor_ids:
     text = from_brainmap_retrieve_microarray_filterby_donorids_probeids(probe_ids=probe_ids, donor_id=donor_id)
     data = text['msg']
-    
+
     # @TODO clean this
     zscores = np.array([[float(data['probes'][i]['z-score'][j]) for i in range(len(data['probes']))] for j in range(len(data['samples']))])
 
@@ -233,14 +247,14 @@ def get_mean_zscores(gene_symbols=None, combined_zscores=None):
   Args:
   combined_zscores (list): lists of zscores corresponding to each region of interest, populated from filtered_coords_and_zscores
   """
-  
+
   if gene_symbols is None:
     raise ValueMissingError('gene_symbols needs to be defined')
   if combined_zscores is None:
     raise ValueMissingError('combined_zscores is required')
-  
+
   unique_gene_symbols = np.unique(gene_symbols)
-  
+
   '''
   A = [a,a,a,b,b,b,c,c]
   B = [a,b,c]

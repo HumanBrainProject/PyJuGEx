@@ -1,3 +1,17 @@
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from aiohttp import web
 import aiohttp_cors
 import json
@@ -32,7 +46,7 @@ else:
 
 def get_roi_img_array(obj):
     pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
-    
+
     filename = webjugex.util.get_filename_from_resp(pmap_resp)
     return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
 

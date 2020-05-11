@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #import pyArango
 from pyArango.connection import *
 import json
@@ -13,7 +28,7 @@ class querydb:
         self.rois = self.db["rois"]
         with open('files/filteredJuBrainJsonmod.json') as file:
             self.metadata = json.load(file)
-        self.idpmapdict = {}        
+        self.idpmapdict = {}
         self.createidpmap(self.metadata[0])
 
     def createidpmap(self, d):
@@ -57,5 +72,3 @@ class querydb:
         else:
             for key, values in self.idpmapdict.items():
                 print(key,' values = ',values)
-
-
