@@ -1,6 +1,6 @@
 # pyjugex
 
-[![](https://github.com/fzj-inm1-bda/pyjugex/workflows/Pytest/badge.svg)](https://github.com/fzj-inm1-bda/pyjugex/actions?query=workflow%3APytest)
+[![Travis (.com)](https://img.shields.io/travis/com/humanbrainproject/pyjugex)](https://travis-ci.com/github/HumanBrainProject/PyJuGEx)
 [![PyPI](https://img.shields.io/pypi/v/pyjugex)](https://pypi.org/project/pyjugex/)
 [![Read the Docs (version)](https://img.shields.io/readthedocs/pyjugex/latest)](https://pyjugex.readthedocs.io/en/latest/index.html)
 
