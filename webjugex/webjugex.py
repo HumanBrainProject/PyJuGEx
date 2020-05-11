@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import division
 import os
 import numpy as np
@@ -96,7 +111,7 @@ class Analysis:
         self.filter_threshold = float(filter_threshold)
         self.n_rep = n_rep
         self.cache_dir = gene_cache_dir
-        self.verbose = verbose        
+        self.verbose = verbose
         self.single_probe_mode = single_probe_mode
         self.anova_factors = dict.fromkeys(['Age', 'Race', 'Specimen', 'Area', 'Zscores'])
         self.genesymbol_and_mean_zscores = dict.fromkeys(['uniqueId', 'combined_zscores'])
@@ -164,7 +179,7 @@ class Analysis:
         """
 
         for gene in self.gene_list:
-            
+
             data = util.from_brainmap_retrieve_gene(gene=gene, verbose=self.verbose)
 
             if int(data['Response']['@num_rows']) <= 0:
@@ -333,7 +348,7 @@ class Analysis:
             self.retrieve_probe_ids()
             if self.gene_list_to_download:
                 for donor in self.donor_ids:
-                    self.__download_and_save_zscores_and_samples_partial(donor)            
+                    self.__download_and_save_zscores_and_samples_partial(donor)
             self.read_cached_zscores_samples_and_specimen_data()
 
 

@@ -1,3 +1,17 @@
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from .util import (
   get_mean_zscores,
   filter_coordinates_and_zscores,
@@ -69,7 +83,7 @@ class analysis:
     if len(error_message) > 0:
       raise ValueMissingError(','.join(error_message))
     return True
-  
+
   def get_filtered_coord(self):
     """
     TODO write doc
@@ -77,13 +91,13 @@ class analysis:
 
     gene_symbols = get_gene_symbols(self.gene_list)
     samples_zscores_and_specimen_dict = from_brainmap_on_genes_retrieve_data(genes=self.gene_list)
-    
+
     filtered_coords_and_zscores = self.get_filtered_coords_and_zscores(samples_zscores_and_specimen_dict)
     combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
     genesymbol_and_mean_zscores = get_mean_zscores(gene_symbols, combined_zscores)
 
     areainfo = {}
-    
+
     for roi_coord_zscore in filtered_coords_and_zscores:
       key = roi_coord_zscore['realname']
       if key not in areainfo:
@@ -116,7 +130,7 @@ class analysis:
 
   def run(self):
     """
-    Start differential analysis 
+    Start differential analysis
     """
     self._check_prereq()
 
@@ -126,7 +140,7 @@ class analysis:
 
     specimen_factors = from_brainmap_retrieve_specimen_factors()
     specimen=[roi_coord_and_zscore['specimen'] for roi_coord_and_zscore in filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
-    
+
     # Both Age and Race should have len(self.filtered_coords_and_zscores) entries. The following three lines are used to get the correct values from specimenFactors['Age'] and specimenFactors['Race'] using specimenFactors['name'] and repeat them the required number of times as given by self.anova_factors['Specimen']
     combined_zscores = [roi_coord_and_zscore['zscores'][i] for roi_coord_and_zscore in filtered_coords_and_zscores for i in range(len(roi_coord_and_zscore['zscores']))]
 
@@ -144,7 +158,7 @@ class analysis:
 
     # in webjugex, accumulate_roicoords_and_name gets called to return the relevant coord
     self.anova.run()
-  
+
 
 def get_gene_symbols(genes=[]):
   gene_symbols = []
