@@ -22,6 +22,8 @@ import os
 import requests
 import socket
 import re
+import sys
+import brainscapes
 
 import HBPLogger
 from default import default_param
@@ -51,25 +53,57 @@ def get_roi_img_array(obj):
     return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
 
 def run_pyjugex_analysis(jsonobj):
-    roi1 = {}
-    roi2 = {}
+    # TODO Replace this with Timo's code
 
-    roi1_obj = jsonobj['area1']
-    roi1['data'] = get_roi_img_array(roi1_obj)
-    roi1['name'] = jsonobj['area1']['name']
-
-    roi2_obj = jsonobj['area2']
-    roi2['data'] = get_roi_img_array(roi2_obj)
-    roi2['name'] = jsonobj['area2']['name']
-
-    single_probe_mode = jsonobj.get('mode', default_param['mode'])
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
-    jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
+    environ['HBP_AUTH_TOKEN'] = "<<<Paste your HBP auth token here>>>"
+    sys.exit("HBP token not defined")
 
-    result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
-    return result
+    brainscapes.logger.setLevel("INFO") # we want to see some messages!
+
+    atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
+    # next line is optional - cytoarchitectonic maps are selected by default
+    atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5_)
+    # as in the original JuGEx, we prefer thresholded probability maps # over the labelled region in the maximum probability map
+    atlas.enable_continuous_map_thresholding(filter_threshold)
+
+    jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
+    jugex.add_candidate_gene(brainscapes.features.gene_names.MAOA)
+    jugex.add_candidate_gene(brainscapes.features.gene_names.TAC1)
+
+    jugex.define_roi1(jsonobj['area1']['name'])
+    jugex.define_roi2(jsonobj['area2']['name'])
+
+    #from nilearn import plotting import numpy as np
+    #for region,samples in zip(['v1 right','v2 right'],[jugex.samples1,jugex.samples2]):
+    #atlas.select_region(region)
+    #mask = atlas.get_mask(bs.spaces.MNI_152_ICBM_2009C_NONLINEAR_ASYMMETRIC) display = plotting.plot_roi(mask)
+    #display.add_markers([k for k,v in samples.items()])
+
+    jugex.run(permutations=n_rep)
+    return jugex.result
+
+    #roi1 = {}
+    #roi2 = {}
+
+    #roi1_obj = jsonobj['area1']
+    #roi1['data'] = get_roi_img_array(roi1_obj)
+    #roi1['name'] = jsonobj['area1']['name']
+
+    #roi2_obj = jsonobj['area2']
+    #roi2['data'] = get_roi_img_array(roi2_obj)
+    #roi2['name'] = jsonobj['area2']['name']
+
+    #single_probe_mode = jsonobj.get('mode', default_param['mode'])
+    #filter_threshold = jsonobj.get('threshold', default_param['threshold'])
+    #n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
+
+    #jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
+
+    #result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
+    #return result
 
 async def handle_post(request):
     if request.can_read_body:
