@@ -46,6 +46,8 @@ if os.getenv('GENE_CACHE_DIR') is not None:
 else:
     gene_cache_dir = '.pyjugex'
 
+token_handler = jwt_handler()
+
 def get_roi_img_array(obj):
     pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
 
@@ -58,8 +60,7 @@ def run_pyjugex_analysis(jsonobj):
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
-    environ['HBP_AUTH_TOKEN'] = "<<<Paste your HBP auth token here>>>"
-    sys.exit("HBP token not defined")
+    environ['HBP_AUTH_TOKEN'] = token_handler.token["access_token"]
 
     brainscapes.logger.setLevel("INFO") # we want to see some messages!
 
