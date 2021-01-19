@@ -4,3 +4,6 @@ statsmodels
 requests
 nibabel
 xmltodict
+aiohttp
+aiohttp_cors
+brainscapes
