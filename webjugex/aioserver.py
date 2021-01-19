@@ -24,6 +24,7 @@ import socket
 import re
 import sys
 import brainscapes
+import jwt_handler
 
 import HBPLogger
 from default import default_param
