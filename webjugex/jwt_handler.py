@@ -26,28 +26,24 @@ def request_token():
                 data = build_request_object(),
                 headers = {'content-type': 'application/x-www-form-urlencoded'}
             )
-    print(result)
     return result
 
 class jwt_handler:
     def _update_token(self):
         while True:
-            print("_update_token called")
             self.token = json.loads(request_token().content.decode("utf-8"))
-            print(self.token)
             time_until_next_refresh = int(self.token["expires_in"]) - 300
-            print(time_until_next_refresh)
             time.sleep(time_until_next_refresh)
 
     def __init__(self):
-        print("Init")
         self.token = None
         update_thread = threading.Thread(target=self._update_token, name="update_token")
         update_thread.start()
 
 def main():
     token_handler = jwt_handler()
-    print("hello world")
+    time.sleep(5)
+    print(token_handler.token)
 
 if __name__ == "__main__":
     main()
