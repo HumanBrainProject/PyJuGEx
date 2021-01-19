@@ -47,7 +47,7 @@ if os.getenv('GENE_CACHE_DIR') is not None:
 else:
     gene_cache_dir = '.pyjugex'
 
-token_handler = jwt_handler()
+token_handler = jwt_handler.jwt_handler()
 
 def get_roi_img_array(obj):
     pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
