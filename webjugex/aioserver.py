@@ -56,6 +56,7 @@ def get_roi_img_array(obj):
     return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
 
 def run_pyjugex_analysis(jsonobj):
+    print(jsonobj)
     # TODO Replace this with Timo's code
 
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
