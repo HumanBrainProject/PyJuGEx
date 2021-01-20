@@ -71,7 +71,7 @@ def run_pyjugex_analysis(jsonobj):
     # as in the original JuGEx, we prefer thresholded probability maps # over the labelled region in the maximum probability map
     #atlas.enable_continuous_map_thresholding(filter_threshold)
 
-    jugex = brainscapes.analysis.a(atlas)
+    jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
     jugex.add_candidate_genes(brainscapes.features.gene_names.MAOA)
     jugex.add_candidate_genes(brainscapes.features.gene_names.TAC1)
 
