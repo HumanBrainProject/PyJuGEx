@@ -61,7 +61,7 @@ def run_pyjugex_analysis(jsonobj):
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
-    environ['HBP_AUTH_TOKEN'] = token_handler.token["access_token"]
+    os.environ['HBP_AUTH_TOKEN'] = token_handler.token["access_token"]
 
     brainscapes.logger.setLevel("INFO") # we want to see some messages!
 
