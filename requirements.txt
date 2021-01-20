@@ -6,4 +6,3 @@ nibabel
 xmltodict
 aiohttp
 aiohttp_cors
-brainscapes
