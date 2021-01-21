@@ -25,6 +25,7 @@ import re
 import sys
 import brainscapes
 import jwt_handler
+import string
 
 import HBPLogger
 from default import default_param
@@ -57,7 +58,6 @@ def get_roi_img_array(obj):
 
 def run_pyjugex_analysis(jsonobj):
     print(jsonobj)
-    # TODO Replace this with Timo's code
 
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
@@ -67,14 +67,24 @@ def run_pyjugex_analysis(jsonobj):
     brainscapes.logger.setLevel("INFO") # we want to see some messages!
 
     atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
-    # next line is optional - cytoarchitectonic maps are selected by default
+
+    area1_julich_brain_version = jsonobj["area1"]["atlas"]["version"]
+    area2_julich_brain_version = jsonobj["area2"]["atlas"]["version"]
+
+    if not area1_julich_brain_version == area2_julich_brain_version:
+        print("version mismatch")
+
+    area1_julich_brain_version.replace(".", "_")
+    print(area1_julich_brain_version)
+
     atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5_)
     # as in the original JuGEx, we prefer thresholded probability maps # over the labelled region in the maximum probability map
     #atlas.enable_continuous_map_thresholding(filter_threshold)
 
     jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
-    jugex.add_candidate_genes(brainscapes.features.gene_names.MAOA)
-    jugex.add_candidate_genes(brainscapes.features.gene_names.TAC1)
+
+    for gene in jsonobj['selectedGenes']:
+        jugex.add_candidate_genes(brainscapes.features.gene_names.[gene])
 
     jugex.define_roi1(jsonobj['area1']['name'])
     jugex.define_roi2(jsonobj['area2']['name'])
@@ -86,7 +96,16 @@ def run_pyjugex_analysis(jsonobj):
     #display.add_markers([k for k,v in samples.items()])
 
     jugex.run(permutations=n_rep)
-    return jugex.result
+    result = jugex.result
+    result["Version"] = os.environ["OPENSHIFT_BUILD_COMMIT"]
+    result["Areas"] = []
+    result["Areas"].append(
+                        {
+                            "name": jsonobj["area1"]["name"],
+                            "hemisphere": jsonobj["area1"]["hemisphere"]
+                        }
+
+    return result
 
     #roi1 = {}
     #roi2 = {}
