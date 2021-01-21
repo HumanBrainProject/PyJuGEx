@@ -58,7 +58,6 @@ def get_roi_img_array(obj):
 
 def run_pyjugex_analysis(jsonobj):
     print(jsonobj)
-
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
@@ -68,8 +67,10 @@ def run_pyjugex_analysis(jsonobj):
 
     atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
 
-    area1_julich_brain_version = jsonobj["area1"]["atlas"]["version"]
-    area2_julich_brain_version = jsonobj["area2"]["atlas"]["version"]
+    area1_julich_brain_version = jsonobj["area1"]["areas"][0]["atlas"]["version"]
+    area2_julich_brain_version = jsonobj["area2"]["areas"][0]["atlas"]["version"]
+
+    print(area1_julich_brain_version)
 
     if not area1_julich_brain_version == area2_julich_brain_version:
         print("version mismatch")
@@ -84,10 +85,10 @@ def run_pyjugex_analysis(jsonobj):
     jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
 
     for gene in jsonobj['selectedGenes']:
-        jugex.add_candidate_genes(brainscapes.features.gene_names[gene])
+        jugex.add_candidate_genes(gene)
 
-    jugex.define_roi1(jsonobj['area1']['name'])
-    jugex.define_roi2(jsonobj['area2']['name'])
+    jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"])
+    jugex.define_roi2(jsonobj['area2']["areas"][0]["name"])
 
     #from nilearn import plotting import numpy as np
     #for region,samples in zip(['v1 right','v2 right'],[jugex.samples1,jugex.samples2]):
@@ -95,37 +96,62 @@ def run_pyjugex_analysis(jsonobj):
     #mask = atlas.get_mask(bs.spaces.MNI_152_ICBM_2009C_NONLINEAR_ASYMMETRIC) display = plotting.plot_roi(mask)
     #display.add_markers([k for k,v in samples.items()])
 
+    #for item in jugex._samples1.items():
+    #    print(item[1])
+    #    for item_1 in item[1]:
+    #        print(item_1)
+    #        print(item[1][item_1])
+    #        print(type(item[1][item_1]))
+
     jugex.run(permutations=n_rep)
-    result = jugex.result
-    result["Version"] = os.environ["OPENSHIFT_BUILD_COMMIT"]
+    jugex_result = jugex.result()
+    print(jugex_result)
+
+    zscores = jugex_result["zscores"][jsonobj['selectedGenes'][0]]
+
+    for gene in jsonobj['selectedGenes'][1:]:
+        zscores = zip(zscores, jugex_result["zscores"][gene])
+
+#"probes":[{"probe_properties": {"MAOA": 0.0101010, "TAC1": -1232434}, "position": [x,y,z]
+
+    probes_area1 = []
+    probes_area2 = []
+
+    for i in range(len(list(jugex_result["zscores"].values())[0])):
+        tmp_probe = {"probe_properties": {}}
+        for gene in jsonobj['selectedGenes']:
+            tmp_probe["probe_properties"][gene] = jugex_result["zscores"][gene][i]
+
+        tmp_probe["position"] = jugex_result["mnicoord"][i]
+
+        if jugex_result["area"][i] == jsonobj["area1"]["areas"][0]["name"]:
+            print("Area 1")
+            probes_area1.append(tmp_probe)
+        else:
+            print("Area 2")
+            probes_area2.append(tmp_probe)
+
+    print(probes_area1)
+    print(probes_area2)
+
+    result = {"result": jugex_result["p-values"]}
+    #result["Version"] = os.environ["OPENSHIFT_BUILD_COMMIT"]
     result["Areas"] = []
     result["Areas"].append(
                         {
-                            "name": jsonobj["area1"]["name"],
-                            "hemisphere": jsonobj["area1"]["hemisphere"]
+                            "name": jsonobj["area1"]["areas"][0]["name"],
+                            "hemisphere": jsonobj["area1"]["areas"][0]["hemisphere"],
+                            "probes": probes_area1
                         })
+    result["Areas"].append(
+                    {
+                        "name": jsonobj["area2"]["areas"][0]["name"],
+                        "hemisphere": jsonobj["area2"]["areas"][0]["hemisphere"],
+                        "probes": probes_area2
+                    })
 
+    print(result)
     return result
-
-    #roi1 = {}
-    #roi2 = {}
-
-    #roi1_obj = jsonobj['area1']
-    #roi1['data'] = get_roi_img_array(roi1_obj)
-    #roi1['name'] = jsonobj['area1']['name']
-
-    #roi2_obj = jsonobj['area2']
-    #roi2['data'] = get_roi_img_array(roi2_obj)
-    #roi2['name'] = jsonobj['area2']['name']
-
-    #single_probe_mode = jsonobj.get('mode', default_param['mode'])
-    #filter_threshold = jsonobj.get('threshold', default_param['threshold'])
-    #n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
-
-    #jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
-
-    #result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
-    #return result
 
 async def handle_post(request):
     if request.can_read_body:
