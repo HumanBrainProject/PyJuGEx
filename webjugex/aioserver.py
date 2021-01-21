@@ -151,7 +151,7 @@ def run_pyjugex_analysis(jsonobj):
                     })
 
     print(result)
-    return result
+    return json.dumps(result)
 
 async def handle_post(request):
     if request.can_read_body:
