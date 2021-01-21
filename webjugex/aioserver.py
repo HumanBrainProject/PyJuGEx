@@ -98,6 +98,12 @@ def run_pyjugex_analysis(jsonobj):
     jugex.run(permutations=n_rep)
     result = jugex.result
     result["Version"] = os.environ["OPENSHIFT_BUILD_COMMIT"]
+    result["Areas"] = []
+    result["Areas"].append(
+                        {
+                            "name": jsonobj["area1"]["name"],
+                            "hemisphere": jsonobj["area1"]["hemisphere"]
+                        }
 
     return result
 
