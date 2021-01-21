@@ -87,8 +87,8 @@ def run_pyjugex_analysis(jsonobj):
     for gene in jsonobj['selectedGenes']:
         jugex.add_candidate_genes(gene)
 
-    jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"])
-    jugex.define_roi2(jsonobj['area2']["areas"][0]["name"])
+    jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"])
+    jugex.define_roi2(jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"])
 
     #from nilearn import plotting import numpy as np
     #for region,samples in zip(['v1 right','v2 right'],[jugex.samples1,jugex.samples2]):
