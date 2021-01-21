@@ -96,7 +96,10 @@ def run_pyjugex_analysis(jsonobj):
     #display.add_markers([k for k,v in samples.items()])
 
     jugex.run(permutations=n_rep)
-    return jugex.result
+    result = jugex.result
+    result["Version"] = os.environ["OPENSHIFT_BUILD_COMMIT"]
+
+    return result
 
     #roi1 = {}
     #roi2 = {}
