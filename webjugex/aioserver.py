@@ -107,6 +107,8 @@ def run_pyjugex_analysis(jsonobj):
     jugex_result = jugex.result()
     print(jugex_result)
 
+    logger.log("info": {"jugex_result": str(jugex_result)})
+
     zscores = jugex_result["zscores"][jsonobj['selectedGenes'][0]]
 
     for gene in jsonobj['selectedGenes'][1:]:
@@ -151,6 +153,9 @@ def run_pyjugex_analysis(jsonobj):
                     })
 
     print(result)
+
+    logger.log("info": {"returned_result": str(result)})
+
     return json.dumps(result)
 
 async def handle_post(request):
