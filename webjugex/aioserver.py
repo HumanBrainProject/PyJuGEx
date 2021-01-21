@@ -84,7 +84,7 @@ def run_pyjugex_analysis(jsonobj):
     jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
 
     for gene in jsonobj['selectedGenes']:
-        jugex.add_candidate_genes(brainscapes.features.gene_names.[gene])
+        jugex.add_candidate_genes(brainscapes.features.gene_names[gene])
 
     jugex.define_roi1(jsonobj['area1']['name'])
     jugex.define_roi2(jsonobj['area2']['name'])
@@ -103,7 +103,7 @@ def run_pyjugex_analysis(jsonobj):
                         {
                             "name": jsonobj["area1"]["name"],
                             "hemisphere": jsonobj["area1"]["hemisphere"]
-                        }
+                        })
 
     return result
 
