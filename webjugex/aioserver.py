@@ -119,6 +119,8 @@ def run_pyjugex_analysis(jsonobj):
     probes_area1 = []
     probes_area2 = []
 
+    brainscapes_areas = list(set(jugex_result["area"]))
+
     for i in range(len(list(jugex_result["zscores"].values())[0])):
         tmp_probe = {"probe_properties": {}}
         for gene in jsonobj['selectedGenes']:
@@ -126,7 +128,7 @@ def run_pyjugex_analysis(jsonobj):
 
         tmp_probe["position"] = jugex_result["mnicoord"][i]
 
-        if jugex_result["area"][i] == jsonobj["area1"]["areas"][0]["name"]:
+        if jugex_result["area"][i] == brainscapes_areas[0]:
             print("Area 1")
             probes_area1.append(tmp_probe)
         else:
