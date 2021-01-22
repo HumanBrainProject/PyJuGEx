@@ -12,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aiohttp import web
+
 import aiohttp_cors
 import json
-import nibabel as nib
+#import nibabel as nib
 import os
 import requests
-import socket
-import re
-import sys
+#import socket
+#import re
+#import sys
 import brainscapes
 import jwt_handler
-import string
-
+#import string
 import HBPLogger
+
+from aiohttp import web
 from default import default_param
 
 _fluent_host = os.getenv('FLUENT_HOST', None)
