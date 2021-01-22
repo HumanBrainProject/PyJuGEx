@@ -64,8 +64,6 @@ def run_pyjugex_analysis(jsonobj):
     print(area1_julich_brain_version)
 
     atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5_)
-    # as in the original JuGEx, we prefer thresholded probability maps # over the labelled region in the maximum probability map
-    #atlas.enable_continuous_map_thresholding(filter_threshold)
 
     jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
 
@@ -74,19 +72,6 @@ def run_pyjugex_analysis(jsonobj):
 
     jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"])
     jugex.define_roi2(jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"])
-
-    #from nilearn import plotting import numpy as np
-    #for region,samples in zip(['v1 right','v2 right'],[jugex.samples1,jugex.samples2]):
-    #atlas.select_region(region)
-    #mask = atlas.get_mask(bs.spaces.MNI_152_ICBM_2009C_NONLINEAR_ASYMMETRIC) display = plotting.plot_roi(mask)
-    #display.add_markers([k for k,v in samples.items()])
-
-    #for item in jugex._samples1.items():
-    #    print(item[1])
-    #    for item_1 in item[1]:
-    #        print(item_1)
-    #        print(item[1][item_1])
-    #        print(type(item[1][item_1]))
 
     jugex.run(permutations=n_rep)
     jugex_result = jugex.result()
@@ -98,8 +83,6 @@ def run_pyjugex_analysis(jsonobj):
 
     for gene in jsonobj['selectedGenes'][1:]:
         zscores = zip(zscores, jugex_result["zscores"][gene])
-
-#"probes":[{"probe_properties": {"MAOA": 0.0101010, "TAC1": -1232434}, "position": [x,y,z]
 
     probes_area1 = []
     probes_area2 = []
