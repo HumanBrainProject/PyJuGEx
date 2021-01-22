@@ -119,3 +119,4 @@ def run_pyjugex_analysis(jsonobj):
 jsonobj = {"area1":{"threshold":0.2,"areas":[{"name":"Area 3b (PostCG)","hemisphere":"right","atlas":{"name":"Julich Brain","version":"v2.4","id":"minds/core/parcellationatlas/v1.0.0/94c1125b-b87e-45e4-901c-00daee7f2579-25"}}]},"area2":{"threshold":0.2,"areas":[{"name":"Area PFt (IPL)","hemisphere":"left","atlas":{"name":"Julich Brain","version":"v2.4","id":"minds/core/parcellationatlas/v1.0.0/94c1125b-b87e-45e4-901c-00daee7f2579- 25"}}]},"selectedGenes":["MAOA","TAC1"],"nPermutations":2,"threshold":"0.2","singleProbeMode":False,"ignoreCustomProbe":False}
 
 run_pyjugex_analysis(jsonobj)
+print("test finished")
