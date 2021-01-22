@@ -16,7 +16,6 @@ from aiohttp import web
 import aiohttp_cors
 import json
 import nibabel as nib
-import hbp_human_atlas as atlas
 import os
 import requests
 import socket
