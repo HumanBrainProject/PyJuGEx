@@ -177,7 +177,6 @@ def main():
 
     cors.add(app.router.add_post("/jugex_v2", handle_post2), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_get("/",return_auto_complete), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
-    cors.add(app.router.add_static('/public/',path=str('./public/')))
     logger.log('info', {"message": "webjugex backend started"})
     web.run_app(app,host="0.0.0.0",port=8003)
 
