@@ -39,12 +39,6 @@ logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
 
-# get cache dir from environment variable
-if os.getenv('GENE_CACHE_DIR') is not None:
-    gene_cache_dir = os.getenv('GENE_CACHE_DIR')
-else:
-    gene_cache_dir = '.pyjugex'
-
 token_handler = jwt_handler.jwt_handler()
 
 def get_roi_img_array(obj):
