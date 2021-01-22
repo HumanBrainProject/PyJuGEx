@@ -1,8 +1,2 @@
-numpy
-scipy==1.2
-statsmodels
-requests
-nibabel
-xmltodict
 aiohttp
 aiohttp_cors
