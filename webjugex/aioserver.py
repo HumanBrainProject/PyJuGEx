@@ -17,7 +17,6 @@ import aiohttp_cors
 import json
 import nibabel as nib
 import hbp_human_atlas as atlas
-import webjugex
 import os
 import requests
 import socket
