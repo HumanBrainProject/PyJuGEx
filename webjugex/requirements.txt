@@ -1,3 +1,0 @@
-pyjugex
-aiohttp
-aiohttp_cors
