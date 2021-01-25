@@ -111,7 +111,7 @@ def run_pyjugex_analysis(jsonobj):
     atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
 
     if len(jsonobj["area1"]["areas"]) != 1:
-        roi = _prepare_region_list(jsonobj["area1"]["areas"])
+        roi1 = _prepare_region_list(jsonobj["area1"]["areas"])
     else:
         roi1 = jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"]
 
