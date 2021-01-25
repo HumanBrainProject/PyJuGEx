@@ -19,11 +19,6 @@ WORKDIR /webjugex
 
 RUN pip install -r requirements.txt
 
-RUN git clone https://jugit.fz-juelich.de/v.marcenko/brainscapes.git
-RUN cd brainscapes && git checkout koehnen_Dictionary_merge_compatability\
-  && pip install -e .
-
-
 WORKDIR /webjugex/webjugex
 
 EXPOSE 8003

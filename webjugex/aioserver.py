@@ -24,6 +24,7 @@ import requests
 import brainscapes
 import jwt_handler
 #import string
+
 import HBPLogger
 
 from aiohttp import web
@@ -39,6 +40,7 @@ logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
+
 
 token_handler = jwt_handler.jwt_handler()
 
