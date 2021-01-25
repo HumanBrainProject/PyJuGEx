@@ -102,7 +102,7 @@ def run_pyjugex_analysis(jsonobj):
 
     atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
 
-    if len(jsonobj["area1"]["areas"][0]) == 1 and len(jsonobj["area2"]["areas"][0]) == 1:
+    if len(jsonobj["area1"]["areas"]) == 1 and len(jsonobj["area2"]["areas"]) == 1:
         area1_julich_brain_version = jsonobj["area1"]["areas"][0]["atlas"]["version"]
         area2_julich_brain_version = jsonobj["area2"]["areas"][0]["atlas"]["version"]
 
