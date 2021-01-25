@@ -102,38 +102,42 @@ def run_pyjugex_analysis(jsonobj):
 
     atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
 
-    area1_julich_brain_version = jsonobj["area1"]["areas"][0]["atlas"]["version"]
-    area2_julich_brain_version = jsonobj["area2"]["areas"][0]["atlas"]["version"]
+    if len(jsonobj["area1"]["areas"][0]) == 1 and len(jsonobj["area2"]["areas"][0]) == 1:
+        area1_julich_brain_version = jsonobj["area1"]["areas"][0]["atlas"]["version"]
+        area2_julich_brain_version = jsonobj["area2"]["areas"][0]["atlas"]["version"]
 
-    print(area1_julich_brain_version)
+        print(area1_julich_brain_version)
 
-    if not area1_julich_brain_version == area2_julich_brain_version:
-        print("version mismatch")
+        if not area1_julich_brain_version == area2_julich_brain_version:
+            print("version mismatch")
 
-    area1_julich_brain_version.replace(".", "_")
-    print(area1_julich_brain_version)
+        area1_julich_brain_version.replace(".", "_")
+        print(area1_julich_brain_version)
 
-    atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5_)
+        atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5_)
 
-    jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
+        jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
 
-    for gene in jsonobj['selectedGenes']:
-        jugex.add_candidate_genes(gene)
+        for gene in jsonobj['selectedGenes']:
+            jugex.add_candidate_genes(gene)
 
-    jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"])
-    jugex.define_roi2(jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"])
+        jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"])
+        jugex.define_roi2(jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"])
 
-    jugex.run(permutations=n_rep)
-    jugex_result = jugex.result()
-    print(jugex_result)
+        jugex.run(permutations=n_rep)
+        jugex_result = jugex.result()
+        print(jugex_result)
 
-    logger.log("info", {"jugex_result": str(jugex_result)})
+        logger.log("info", {"jugex_result": str(jugex_result)})
 
-    result = _transform_brainscapes_response(jugex_result, jsonobj)
+        result = _transform_brainscapes_response(jugex_result, jsonobj)
 
-    logger.log("info", {"returned_result": str(result)})
+        logger.log("info", {"returned_result": str(result)})
 
-    return json.dumps(result)
+        return json.dumps(result)
+    else:
+        raise ValueError('Multiple regions are not yet supported')
+
 
 async def handle_post(request):
     if request.can_read_body:
