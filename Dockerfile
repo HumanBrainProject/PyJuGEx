@@ -18,7 +18,6 @@ COPY . /webjugex
 WORKDIR /webjugex
 
 RUN pip install -r requirements.txt
-RUN pip install .
 
 WORKDIR /webjugex/webjugex
 
