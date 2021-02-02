@@ -116,7 +116,7 @@ def run_pyjugex_analysis(jsonobj):
         area1_julich_brain_version.replace(".", "_")
         print(area1_julich_brain_version)
 
-        atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5_)
+        atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5)
 
         jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
 
