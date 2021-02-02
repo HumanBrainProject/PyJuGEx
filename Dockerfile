@@ -19,8 +19,8 @@ WORKDIR /webjugex
 
 RUN pip install -r requirements.txt
 
-RUN git clone https://jugit.fz-juelich.de/s.koehnen/brainscapes.git
-RUN cd brainscapes && git checkout koehnen_Multiple_Regions\
+RUN git clone https://jugit.fz-juelich.de/v.marcenko/brainscapes.git
+RUN cd brainscapes && git checkout development\
   && pip install -e .
 
 
