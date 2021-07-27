@@ -21,7 +21,8 @@ import requests
 #import socket
 #import re
 #import sys
-import brainscapes
+import siibra as brainscapes
+import siibra_jugex
 import jwt_handler
 #import string
 
@@ -116,15 +117,17 @@ def run_pyjugex_analysis(jsonobj):
         area1_julich_brain_version.replace(".", "_")
         print(area1_julich_brain_version)
 
-        atlas.select_parcellation(brainscapes.parcellations.JULICH_BRAIN_PROBABILISTIC_CYTOARCHITECTONIC_MAPS_V2_5)
-
-        jugex = brainscapes.analysis.DifferentialGeneExpression(atlas)
+        atlas.select_parcellation(brainscapes.parcellations['2.5'])
+        atlas.threshold_continuous_maps(float(filter_threshold))
+        jugex = siibra_jugex.DifferentialGeneExpression(atlas)
 
         for gene in jsonobj['selectedGenes']:
             jugex.add_candidate_genes(gene)
 
-        jugex.define_roi1(jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"])
-        jugex.define_roi2(jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"])
+        roi1=jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"]
+        roi2=jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"]
+        jugex.define_roi1(roi1)
+        jugex.define_roi2(roi2)
 
         jugex.run(permutations=n_rep)
         jugex_result = jugex.result()
