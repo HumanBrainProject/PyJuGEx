@@ -15,16 +15,10 @@
 
 import aiohttp_cors
 import json
-#import nibabel as nib
 import os
 import requests
-#import socket
-#import re
-#import sys
 import siibra as brainscapes
 import siibra_jugex
-import jwt_handler
-#import string
 
 import HBPLogger
 
@@ -42,8 +36,6 @@ logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
 
-
-token_handler = jwt_handler.jwt_handler()
 
 def _transform_brainscapes_response(brainscapes_resp, jsonobj):
     zscores = brainscapes_resp["zscores"][jsonobj['selectedGenes'][0]]
@@ -99,7 +91,6 @@ def run_pyjugex_analysis(jsonobj):
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
-    os.environ['HBP_AUTH_TOKEN'] = token_handler.token["access_token"]
 
     brainscapes.logger.setLevel("INFO") # we want to see some messages!
 

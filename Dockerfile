@@ -19,7 +19,7 @@ WORKDIR /webjugex
 
 RUN pip install -r requirements.txt
 
-RUN pip install siibra==0.1a7 siibra-jugex==0.1a2
+RUN pip install siibra==0.1a8 siibra-jugex==0.1a2
 
 WORKDIR /webjugex/webjugex
 

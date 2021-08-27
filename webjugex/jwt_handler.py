@@ -10,6 +10,7 @@ REFRESH_TOKEN_env = 'JUGEX_REFRESH_TOKEN'
 CLIENT_ID_env = 'JUGEX_CLIENT_ID'
 CLIENT_SECRET_env = 'JUGEX_CLIENT_SECRET'
 HBP_OIDC_ENDPOINT_env = 'HBP_OIDC_ENDPOINT'
+HBP_ACCESS_TOKEN = 'HBP_ACCESS_TOKEN'
 
 def build_request_object():
     request_template = Template('grant_type=refresh_token&refresh_token=${REFRESH_TOKEN}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}')
@@ -37,8 +38,12 @@ class jwt_handler:
 
     def __init__(self):
         self.token = None
-        update_thread = threading.Thread(target=self._update_token, name="update_token")
-        update_thread.start()
+
+        if environ.get(HBP_ACCESS_TOKEN) is not None:
+            self.token = { 'access_token': environ.get(HBP_ACCESS_TOKEN) }
+        else:
+            update_thread = threading.Thread(target=self._update_token, name="update_token")
+            update_thread.start()
 
 def main():
     token_handler = jwt_handler()
