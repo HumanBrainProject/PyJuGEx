@@ -1,15 +1,28 @@
-from aiohttp import web
+# Copyright 2020 Forschungszentrum Jülich
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import aiohttp_cors
 import json
-import nibabel as nib
-import hbp_human_atlas as atlas
-import webjugex
 import os
 import requests
-import socket
-import re
+import siibra as brainscapes
+import siibra_jugex
 
 import HBPLogger
+
+from aiohttp import web
 from default import default_param
 
 _fluent_host = os.getenv('FLUENT_HOST', None)
@@ -22,40 +35,105 @@ logger = HBPLogger.HBPLogger(_logger_url,_application_name,_deployment)
 
 with open("files/genesymbols.txt", "r") as f:
     dictAutocompleteString = f.read()
-#dictAutocomplete = ["ADRA2A", "AVPR1B", "CHRM2", "CNR1", "CREB1", "CRH", "CRHR1", "CRHR2", "GAD2", "HTR1A", "HTR1B", "HTR1D", "HTR2A", "HTR3A", "HTR5A", "MAOA", "PDE1A", "SLC6A2", "SLC6A4", "SST", "TAC1", "TPH1", "GPR50", "CUX2", "TPH2"]
 
-# get cache dir from environment variable
-if os.getenv('GENE_CACHE_DIR') is not None:
-    gene_cache_dir = os.getenv('GENE_CACHE_DIR')
-else:
-    gene_cache_dir = '.pyjugex'
 
-def get_roi_img_array(obj):
-    pmap_resp = webjugex.util.get_pmap(obj['PMapURL'], obj.get('body', None))
-    
-    filename = webjugex.util.get_filename_from_resp(pmap_resp)
-    return webjugex.util.read_byte_via_nib(pmap_resp.content, gzip=webjugex.util.is_gzipped(filename))
+def _transform_brainscapes_response(brainscapes_resp, jsonobj):
+    zscores = brainscapes_resp["zscores"][jsonobj['selectedGenes'][0]]
+
+    for gene in jsonobj['selectedGenes'][1:]:
+        zscores = zip(zscores, brainscapes_resp["zscores"][gene])
+
+    probes_area1 = []
+    probes_area2 = []
+
+    brainscapes_areas = list(set(brainscapes_resp["area"]))
+
+    for i in range(len(list(brainscapes_resp["zscores"].values())[0])):
+        tmp_probe = {"probe_properties": {}}
+        for gene in jsonobj['selectedGenes']:
+            tmp_probe["probe_properties"][gene] = brainscapes_resp["zscores"][gene][i]
+
+        tmp_probe["position"] = brainscapes_resp["mnicoord"][i]
+
+        if brainscapes_resp["area"][i] == brainscapes_areas[0]:
+            print("Area 1")
+            probes_area1.append(tmp_probe)
+        else:
+            print("Area 2")
+            probes_area2.append(tmp_probe)
+
+    print(probes_area1)
+    print(probes_area2)
+
+    result = {"result": brainscapes_resp["p-values"]}
+    #result["Version"] = os.environ["OPENSHIFT_BUILD_COMMIT"]
+    result["Areas"] = []
+    result["Areas"].append(
+                        {
+                            "name": jsonobj["area1"]["areas"][0]["name"],
+                            "hemisphere": jsonobj["area1"]["areas"][0]["hemisphere"],
+                            "probes": probes_area1
+                        })
+    result["Areas"].append(
+                    {
+                        "name": jsonobj["area2"]["areas"][0]["name"],
+                        "hemisphere": jsonobj["area2"]["areas"][0]["hemisphere"],
+                        "probes": probes_area2
+                    })
+
+    print(result)
+
+    return result
+
 
 def run_pyjugex_analysis(jsonobj):
-    roi1 = {}
-    roi2 = {}
-
-    roi1_obj = jsonobj['area1']
-    roi1['data'] = get_roi_img_array(roi1_obj)
-    roi1['name'] = jsonobj['area1']['name']
-
-    roi2_obj = jsonobj['area2']
-    roi2['data'] = get_roi_img_array(roi2_obj)
-    roi2['name'] = jsonobj['area2']['name']
-
-    single_probe_mode = jsonobj.get('mode', default_param['mode'])
+    print(jsonobj)
     filter_threshold = jsonobj.get('threshold', default_param['threshold'])
     n_rep = jsonobj.get('nPermutations', default_param['nPermutations'])
 
-    jugex = webjugex.Analysis(gene_cache_dir=gene_cache_dir, filter_threshold=filter_threshold, single_probe_mode = single_probe_mode, verbose=True, n_rep=n_rep)
 
-    result = jugex.DifferentialAnalysis(jsonobj['selectedGenes'], roi1, roi2)
-    return result
+    brainscapes.logger.setLevel("INFO") # we want to see some messages!
+
+    atlas = brainscapes.atlases.MULTILEVEL_HUMAN_ATLAS
+
+    if len(jsonobj["area1"]["areas"]) == 1 and len(jsonobj["area2"]["areas"]) == 1:
+        area1_julich_brain_version = jsonobj["area1"]["areas"][0]["atlas"]["version"]
+        area2_julich_brain_version = jsonobj["area2"]["areas"][0]["atlas"]["version"]
+
+        print(area1_julich_brain_version)
+
+        if not area1_julich_brain_version == area2_julich_brain_version:
+            print("version mismatch")
+
+        area1_julich_brain_version.replace(".", "_")
+        print(area1_julich_brain_version)
+
+        atlas.select_parcellation(brainscapes.parcellations['2.5'])
+        atlas.threshold_continuous_maps(float(filter_threshold))
+        jugex = siibra_jugex.DifferentialGeneExpression(atlas)
+
+        for gene in jsonobj['selectedGenes']:
+            jugex.add_candidate_genes(gene)
+
+        roi1=jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"]
+        roi2=jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"]
+        jugex.define_roi1(roi1)
+        jugex.define_roi2(roi2)
+
+        jugex.run(permutations=n_rep)
+        jugex_result = jugex.result()
+        print(jugex_result)
+
+        logger.log("info", {"jugex_result": str(jugex_result)})
+
+        result = _transform_brainscapes_response(jugex_result, jsonobj)
+
+        logger.log("info", {"returned_result": str(result)})
+
+        return json.dumps(result)
+    else:
+        raise ValueError('Multiple regions are not yet supported')
+
 
 async def handle_post(request):
     if request.can_read_body:
@@ -106,7 +184,6 @@ def main():
 
     cors.add(app.router.add_post("/jugex_v2", handle_post2), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
     cors.add(app.router.add_get("/",return_auto_complete), {"*": aiohttp_cors.ResourceOptions(expose_headers="*", allow_headers="*")})
-    cors.add(app.router.add_static('/public/',path=str('./public/')))
     logger.log('info', {"message": "webjugex backend started"})
     web.run_app(app,host="0.0.0.0",port=8003)
 
