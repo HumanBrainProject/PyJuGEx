@@ -71,13 +71,13 @@ def _transform_brainscapes_response(brainscapes_resp, jsonobj):
     result["Areas"].append(
                         {
                             "name": jsonobj["area1"]["areas"][0]["name"],
-                            "hemisphere": jsonobj["area1"]["areas"][0]["hemisphere"],
+                            "hemisphere": jsonobj["area1"]["areas"][0].get('hemisphere'),
                             "probes": probes_area1
                         })
     result["Areas"].append(
                     {
                         "name": jsonobj["area2"]["areas"][0]["name"],
-                        "hemisphere": jsonobj["area2"]["areas"][0]["hemisphere"],
+                        "hemisphere": jsonobj["area2"]["areas"][0].get('hemisphere'),
                         "probes": probes_area2
                     })
 
@@ -108,15 +108,15 @@ def run_pyjugex_analysis(jsonobj):
         area1_julich_brain_version.replace(".", "_")
         print(area1_julich_brain_version)
 
-        atlas.select_parcellation(brainscapes.parcellations['2.5'])
+        atlas.select_parcellation(brainscapes.parcellations['julich 2.9'])
         atlas.threshold_continuous_maps(float(filter_threshold))
         jugex = siibra_jugex.DifferentialGeneExpression(atlas)
 
         for gene in jsonobj['selectedGenes']:
             jugex.add_candidate_genes(gene)
 
-        roi1=jsonobj["area1"]["areas"][0]["name"] + " " + jsonobj["area1"]["areas"][0]["hemisphere"]
-        roi2=jsonobj['area2']["areas"][0]["name"] + " " + jsonobj["area2"]["areas"][0]["hemisphere"]
+        roi1=jsonobj["area1"]["areas"][0]["name"]
+        roi2=jsonobj['area2']["areas"][0]["name"]
         jugex.define_roi1(roi1)
         jugex.define_roi2(roi2)
 
